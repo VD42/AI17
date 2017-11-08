@@ -13,6 +13,7 @@ struct VehicleRealInfo
 	model::VehicleType type;
 	double x;
 	double y;
+	int durability;
 };
 
 
@@ -24,6 +25,8 @@ std::pair<int, int> GetSquare(int pid, std::vector<VehicleRealInfo> const& vehic
 	for (auto const& v : vehicles)
 	{
 		if (v.pid != pid)
+			continue;
+		if (v.durability == 0)
 			continue;
 		if (v.type == type)
 		{
@@ -44,7 +47,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	if (world.getTickIndex() == 0)
 	{
 		for (auto const& v : world.getNewVehicles())
-			vehicles.push_back({ v.getId(), v.getPlayerId(), v.getType(), v.getX(), v.getY() });
+			vehicles.push_back({ v.getId(), v.getPlayerId(), v.getType(), v.getX(), v.getY(), v.getDurability() });
 	}
 
 	for (auto const& u : world.getVehicleUpdates())
@@ -53,6 +56,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			{
 				v.x = u.getX();
 				v.y = u.getY();
+				v.durability = u.getDurability();
 			}
 
 	if ((world.getTickIndex() % 30) == 0)
