@@ -55,53 +55,64 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				v.y = u.getY();
 			}
 
-	if ((world.getTickIndex() % 20) == 0)
+	if ((world.getTickIndex() % 30) == 0)
 	{
 		move.setAction(model::ActionType::ACTION_CLEAR_AND_SELECT);
 		move.setRight(game.getWorldWidth());
 		move.setBottom(game.getWorldHeight());
-		switch (((world.getTickIndex() / 20) % 5))
+		switch (((world.getTickIndex() / 30) % 5))
 		{
-		case 0: move.setVehicleType(model::VehicleType::VEHICLE_ARRV); break;
-		case 1: move.setVehicleType(model::VehicleType::VEHICLE_FIGHTER); break;
-		case 2: move.setVehicleType(model::VehicleType::VEHICLE_HELICOPTER); break;
-		case 3: move.setVehicleType(model::VehicleType::VEHICLE_IFV); break;
-		case 4: move.setVehicleType(model::VehicleType::VEHICLE_TANK); break;
+		case 0: move.setVehicleType(model::VehicleType::VEHICLE_IFV); break;
+		case 1: move.setVehicleType(model::VehicleType::VEHICLE_TANK); break;
+		case 2: move.setVehicleType(model::VehicleType::VEHICLE_ARRV); break;
+		case 3: move.setVehicleType(model::VehicleType::VEHICLE_HELICOPTER); break;
+		case 4: move.setVehicleType(model::VehicleType::VEHICLE_FIGHTER); break;
 		}
 	}
 
-	if ((world.getTickIndex() % 20) == 1)
+	if ((world.getTickIndex() % 30) == 1)
 	{
 		move.setAction(model::ActionType::ACTION_MOVE);
 		std::pair<int, int> tmp;
-		switch (((world.getTickIndex() / 20) % 5))
+		switch (((world.getTickIndex() / 30) % 5))
 		{
 		case 0:
-			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_ARRV);
-			move.setX((1 - tmp.first) * 64.0);
-			move.setY((0 - tmp.second) * 64.0);
-			break;
-		case 1:
-			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_FIGHTER);
-			move.setX((0 - tmp.first) * 64.0);
-			move.setY((0 - tmp.second) * 64.0);
-			break;
-		case 2: 
-			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_HELICOPTER);
-			move.setX((1 - tmp.first) * 64.0);
-			move.setY((1 - tmp.second) * 64.0);
-			break;
-		case 3: 
 			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_IFV);
 			move.setX((0 - tmp.first) * 64.0);
 			move.setY((0 - tmp.second) * 64.0);
 			break;
-		case 4:
+		case 1:
 			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_TANK);
 			move.setX((0 - tmp.first) * 64.0);
-			move.setY((1 - tmp.second) * 64.0);
+			move.setY((0 - tmp.second) * 64.0);
+			break;
+		case 2: 
+			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_ARRV);
+			move.setX((0 - tmp.first) * 64.0);
+			move.setY((0 - tmp.second) * 64.0);
+			break;
+		case 3: 
+			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_HELICOPTER);
+			move.setX((0 - tmp.first) * 64.0);
+			move.setY((0 - tmp.second) * 64.0);
+			break;
+		case 4:
+			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_FIGHTER);
+			move.setX((0 - tmp.first) * 64.0);
+			move.setY((0 - tmp.second) * 64.0);
 			break;
 		}
+	}
+
+	if ((world.getTickIndex() % 30) == 20)
+	{
+		move.setAction(model::ActionType::ACTION_ROTATE);
+		move.setX(64.0);
+		move.setY(64.0);
+		if ((world.getTickIndex() / 30) % 2 == 0)
+			move.setAngle(PI);
+		else
+			move.setAngle(-PI);
 	}
 }
 
