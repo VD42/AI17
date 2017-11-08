@@ -60,18 +60,18 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				v.durability = u.getDurability();
 			}
 
-	if (world.getTickIndex() == 10001 && me.getScore() == 0)
+	if (world.getTickIndex() == 10000 && me.getScore() == 0)
 		rush = true;
 
 	if (rush)
 	{
-		if (world.getTickIndex() == 10001)
+		if (world.getTickIndex() == 10061)
 		{
 			move.setAction(model::ActionType::ACTION_CLEAR_AND_SELECT);
 			move.setRight(game.getWorldWidth());
 			move.setBottom(game.getWorldHeight());
 		}
-		else if (world.getTickIndex() == 10002)
+		else if (world.getTickIndex() == 10062)
 		{
 			move.setAction(model::ActionType::ACTION_MOVE);
 			move.setX(game.getWorldWidth());
