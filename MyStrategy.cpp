@@ -6,22 +6,105 @@
 #include <cmath>
 #include <cstdlib>
 
-using namespace model;
-using namespace std;
+struct VehicleRealInfo
+{
+	long long id;
+	long long pid;
+	model::VehicleType type;
+	double x;
+	double y;
+};
 
-void MyStrategy::move(const Player& me, const World& world, const Game& game, Move& move) {
-    if (world.getTickIndex() == 0) {
-        move.setAction(ACTION_CLEAR_AND_SELECT);
-        move.setRight(world.getWidth());
-        move.setBottom(world.getHeight());
-        return;
-    }
 
-    if (world.getTickIndex() == 1) {
-        move.setAction(ACTION_MOVE);
-        move.setX(world.getWidth() / 2.0);
-        move.setY(world.getHeight() / 2.0);
-    }
+std::pair<int, int> GetSquare(int pid, std::vector<VehicleRealInfo> const& vehicles, model::VehicleType type)
+{
+	int count = 0;
+	std::pair<double, double> result;
+
+	for (auto const& v : vehicles)
+	{
+		if (v.pid != pid)
+			continue;
+		if (v.type == type)
+		{
+			count++;
+			result.first += v.x;
+			result.second += v.y;
+		}
+	}
+	if (count == 0)
+		return { 0, 0 };
+	return { (int)((result.first / (double)count) / 64.0), (int)((result.second / (double)count) / 64.0) };
 }
 
-MyStrategy::MyStrategy() { }
+void MyStrategy::move(model::Player const& me, model::World const& world, model::Game const& game, model::Move & move)
+{
+	static std::vector<VehicleRealInfo> vehicles;
+
+	if (world.getTickIndex() == 0)
+	{
+		for (auto const& v : world.getNewVehicles())
+			vehicles.push_back({ v.getId(), v.getPlayerId(), v.getType(), v.getX(), v.getY() });
+	}
+
+	for (auto const& u : world.getVehicleUpdates())
+		for (auto & v : vehicles)
+			if (u.getId() == v.id)
+			{
+				v.x = u.getX();
+				v.y = u.getY();
+			}
+
+	if ((world.getTickIndex() % 20) == 0)
+	{
+		move.setAction(model::ActionType::ACTION_CLEAR_AND_SELECT);
+		move.setRight(game.getWorldWidth());
+		move.setBottom(game.getWorldHeight());
+		switch (((world.getTickIndex() / 20) % 5))
+		{
+		case 0: move.setVehicleType(model::VehicleType::VEHICLE_ARRV); break;
+		case 1: move.setVehicleType(model::VehicleType::VEHICLE_FIGHTER); break;
+		case 2: move.setVehicleType(model::VehicleType::VEHICLE_HELICOPTER); break;
+		case 3: move.setVehicleType(model::VehicleType::VEHICLE_IFV); break;
+		case 4: move.setVehicleType(model::VehicleType::VEHICLE_TANK); break;
+		}
+	}
+
+	if ((world.getTickIndex() % 20) == 1)
+	{
+		move.setAction(model::ActionType::ACTION_MOVE);
+		std::pair<int, int> tmp;
+		switch (((world.getTickIndex() / 20) % 5))
+		{
+		case 0:
+			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_ARRV);
+			move.setX((1 - tmp.first) * 64.0);
+			move.setY((0 - tmp.second) * 64.0);
+			break;
+		case 1:
+			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_FIGHTER);
+			move.setX((0 - tmp.first) * 64.0);
+			move.setY((0 - tmp.second) * 64.0);
+			break;
+		case 2: 
+			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_HELICOPTER);
+			move.setX((1 - tmp.first) * 64.0);
+			move.setY((1 - tmp.second) * 64.0);
+			break;
+		case 3: 
+			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_IFV);
+			move.setX((0 - tmp.first) * 64.0);
+			move.setY((0 - tmp.second) * 64.0);
+			break;
+		case 4:
+			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_TANK);
+			move.setX((0 - tmp.first) * 64.0);
+			move.setY((1 - tmp.second) * 64.0);
+			break;
+		}
+	}
+}
+
+MyStrategy::MyStrategy()
+{
+}
