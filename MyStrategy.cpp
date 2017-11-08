@@ -43,6 +43,7 @@ std::pair<int, int> GetSquare(int pid, std::vector<VehicleRealInfo> const& vehic
 void MyStrategy::move(model::Player const& me, model::World const& world, model::Game const& game, model::Move & move)
 {
 	static std::vector<VehicleRealInfo> vehicles;
+	static bool rush = false;
 
 	if (world.getTickIndex() == 0)
 	{
@@ -58,6 +59,27 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				v.y = u.getY();
 				v.durability = u.getDurability();
 			}
+
+	if (world.getTickIndex() == 10001 && me.getScore() == 0)
+		rush = true;
+
+	if (rush)
+	{
+		if (world.getTickIndex() == 10001)
+		{
+			move.setAction(model::ActionType::ACTION_CLEAR_AND_SELECT);
+			move.setRight(game.getWorldWidth());
+			move.setBottom(game.getWorldHeight());
+		}
+		else if (world.getTickIndex() == 10002)
+		{
+			move.setAction(model::ActionType::ACTION_MOVE);
+			move.setX(game.getWorldWidth());
+			move.setY(game.getWorldHeight());
+			move.setMaxSpeed(game.getTankSpeed());
+		}
+		return;
+	}
 
 	if ((world.getTickIndex() % 30) == 0)
 	{
@@ -75,6 +97,17 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	}
 
 	if ((world.getTickIndex() % 30) == 1)
+	{
+		move.setAction(model::ActionType::ACTION_ROTATE);
+		move.setX(64.0);
+		move.setY(64.0);
+		if ((world.getTickIndex() / 30) % 2 == 0)
+			move.setAngle(PI);
+		else
+			move.setAngle(-PI);
+	}
+
+	if ((world.getTickIndex() % 30) == 29)
 	{
 		move.setAction(model::ActionType::ACTION_MOVE);
 		std::pair<int, int> tmp;
@@ -106,17 +139,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			move.setY((0 - tmp.second) * 64.0);
 			break;
 		}
-	}
-
-	if ((world.getTickIndex() % 30) == 20)
-	{
-		move.setAction(model::ActionType::ACTION_ROTATE);
-		move.setX(64.0);
-		move.setY(64.0);
-		if ((world.getTickIndex() / 30) % 2 == 0)
-			move.setAngle(PI);
-		else
-			move.setAngle(-PI);
 	}
 }
 
