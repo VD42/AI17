@@ -86,7 +86,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		return;
 	}
 
-	if (world.getTickIndex() < 300)
+	if (world.getTickIndex() < 360)
 	{
 		if (world.getTickIndex() == 200)
 		{
@@ -127,96 +127,96 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		return;
 	}
 
-	if ((world.getTickIndex() % 20) == 0)
+	if (world.getTickIndex() % 60 == 0)
 	{
-		switch (((world.getTickIndex() / 20 + 4) % 6))
+		if ((world.getTickIndex() / 60) % 2 == 0)
 		{
-		case 0:
 			move.setAction(model::ActionType::ACTION_CLEAR_AND_SELECT);
 			move.setLeft(0.0);
 			move.setTop(0.0);
-			move.setRight(arrv_pos.first);
-			move.setBottom(arrv_pos.second);
-			break;
-		case 1:
-			move.setAction(model::ActionType::ACTION_CLEAR_AND_SELECT);
-			move.setLeft(0.0);
-			move.setTop(arrv_pos.second);
-			move.setRight(arrv_pos.first);
+			move.setRight(arrv_pos.first - 32.0);
 			move.setBottom(game.getWorldHeight());
-			break;
-		case 2:
-			move.setAction(model::ActionType::ACTION_CLEAR_AND_SELECT);
-			move.setLeft(arrv_pos.first);
-			move.setTop(0.0);
-			move.setRight(game.getWorldWidth());
-			move.setBottom(arrv_pos.second);
-			break;
-		case 3:
-			move.setAction(model::ActionType::ACTION_CLEAR_AND_SELECT);
-			move.setLeft(arrv_pos.first);
-			move.setTop(arrv_pos.second);
-			move.setRight(game.getWorldWidth());
-			move.setBottom(game.getWorldHeight());
-			break;
-		case 4:
+		}
+		else
+		{
 			move.setAction(model::ActionType::ACTION_CLEAR_AND_SELECT);
 			move.setLeft(0.0);
 			move.setTop(0.0);
 			move.setRight(game.getWorldWidth());
-			move.setBottom(game.getWorldHeight());
-			break;
-		case 5:
-			move.setAction(model::ActionType::ACTION_NONE);
-			break;
+			move.setBottom(arrv_pos.second - 32.0);
+		}
+	}
+	
+	if (world.getTickIndex() % 60 == 1)
+	{
+		if ((world.getTickIndex() / 60) % 2 == 0)
+		{
+			move.setAction(model::ActionType::ACTION_MOVE);
+			move.setX(64.0);
+			move.setY(0.0);
+		}
+		else
+		{
+			move.setAction(model::ActionType::ACTION_MOVE);
+			move.setX(0.0);
+			move.setY(64.0);
 		}
 	}
 
-	/*if ((world.getTickIndex() % 30) == 1)
+	if (world.getTickIndex() % 60 == 2)
 	{
-	move.setAction(model::ActionType::ACTION_ROTATE);
-	move.setX(64.0 + 32.0);
-	move.setY(64.0 + 32.0);
-	if ((world.getTickIndex() / 30) % 2 == 0)
-	move.setAngle(PI);
-	else
-	move.setAngle(-PI);
-	}*/
-
-	if ((world.getTickIndex() % 20) == 1)
-	{
-		switch (((world.getTickIndex() / 20 + 4) % 6))
+		if ((world.getTickIndex() / 60) % 2 == 0)
 		{
-		case 0:
-			move.setAction(model::ActionType::ACTION_MOVE);
-			move.setX(64.0);
-			move.setY(64.0);
-			break;
-		case 1:
-			move.setAction(model::ActionType::ACTION_MOVE);
-			move.setX(64.0);
-			move.setY(-64.0);
-			break;
-		case 2: 
-			move.setAction(model::ActionType::ACTION_MOVE);
-			move.setX(-64.0);
-			move.setY(64.0);
-			break;
-		case 3: 
-			move.setAction(model::ActionType::ACTION_MOVE);
-			move.setX(-64.0);
-			move.setY(-64.0);
-			break;
-		case 4:
-			move.setAction(model::ActionType::ACTION_ROTATE);
-			move.setX(arrv_pos.first);
-			move.setY(arrv_pos.second);
-			move.setAngle(PI);
-			break;
-		case 5:
-			move.setAction(model::ActionType::ACTION_NONE);
-			break;
+			move.setAction(model::ActionType::ACTION_CLEAR_AND_SELECT);
+			move.setLeft(arrv_pos.first + 32.0);
+			move.setTop(0.0);
+			move.setRight(game.getWorldWidth());
+			move.setBottom(game.getWorldHeight());
 		}
+		else
+		{
+			move.setAction(model::ActionType::ACTION_CLEAR_AND_SELECT);
+			move.setLeft(0.0);
+			move.setTop(arrv_pos.second + 32.0);
+			move.setRight(game.getWorldWidth());
+			move.setBottom(game.getWorldHeight());
+		}
+	}
+
+	if (world.getTickIndex() % 60 == 3)
+	{
+		if ((world.getTickIndex() / 60) % 2 == 0)
+		{
+			move.setAction(model::ActionType::ACTION_MOVE);
+			move.setX(-64.0);
+			move.setY(0.0);
+		}
+		else
+		{
+			move.setAction(model::ActionType::ACTION_MOVE);
+			move.setX(0.0);
+			move.setY(-64.0);
+		}
+	}
+
+	if (world.getTickIndex() % 60 == 40)
+	{
+		move.setAction(model::ActionType::ACTION_CLEAR_AND_SELECT);
+		move.setLeft(0.0);
+		move.setTop(0.0);
+		move.setRight(game.getWorldWidth());
+		move.setBottom(game.getWorldHeight());
+	}
+
+	if (world.getTickIndex() % 60 == 41)
+	{
+		move.setAction(model::ActionType::ACTION_ROTATE);
+		move.setX(arrv_pos.first);
+		move.setY(arrv_pos.second);
+		//if ((world.getTickIndex() / 120) % 2 == 0)
+			move.setAngle(PI);
+		//else
+		//	move.setAngle(-PI);
 	}
 }
 
