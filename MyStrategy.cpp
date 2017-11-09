@@ -17,7 +17,7 @@ struct VehicleRealInfo
 };
 
 
-std::pair<int, int> GetSquare(int pid, std::vector<VehicleRealInfo> const& vehicles, model::VehicleType type)
+std::pair<double, double> GetCenter(int pid, std::vector<VehicleRealInfo> const& vehicles, model::VehicleType type)
 {
 	int count = 0;
 	std::pair<double, double> result;
@@ -36,8 +36,8 @@ std::pair<int, int> GetSquare(int pid, std::vector<VehicleRealInfo> const& vehic
 		}
 	}
 	if (count == 0)
-		return { 0, 0 };
-	return { (int)((result.first / (double)count) / 64.0), (int)((result.second / (double)count) / 64.0) };
+		return { 0.0, 0.0 };
+	return { result.first / (double)count, result.second / (double)count };
 }
 
 void MyStrategy::move(model::Player const& me, model::World const& world, model::Game const& game, model::Move & move)
@@ -110,33 +110,33 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	if ((world.getTickIndex() % 30) == 29)
 	{
 		move.setAction(model::ActionType::ACTION_MOVE);
-		std::pair<int, int> tmp;
+		std::pair<double, double> tmp;
 		switch (((world.getTickIndex() / 30) % 5))
 		{
 		case 0:
-			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_IFV);
-			move.setX((1 - tmp.first) * 64.0);
-			move.setY((1 - tmp.second) * 64.0);
+			tmp = GetCenter(me.getId(), vehicles, model::VehicleType::VEHICLE_IFV);
+			move.setX((64.0 + 32.0 - tmp.first) * 64.0);
+			move.setY((64.0 + 32.0 - tmp.second) * 64.0);
 			break;
 		case 1:
-			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_TANK);
-			move.setX((1 - tmp.first) * 64.0);
-			move.setY((1 - tmp.second) * 64.0);
+			tmp = GetCenter(me.getId(), vehicles, model::VehicleType::VEHICLE_TANK);
+			move.setX((64.0 + 32.0 - tmp.first) * 64.0);
+			move.setY((64.0 + 32.0 - tmp.second) * 64.0);
 			break;
 		case 2: 
-			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_ARRV);
-			move.setX((1 - tmp.first) * 64.0);
-			move.setY((1 - tmp.second) * 64.0);
+			tmp = GetCenter(me.getId(), vehicles, model::VehicleType::VEHICLE_ARRV);
+			move.setX((64.0 + 32.0 - tmp.first) * 64.0);
+			move.setY((64.0 + 32.0 - tmp.second) * 64.0);
 			break;
 		case 3: 
-			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_HELICOPTER);
-			move.setX((1 - tmp.first) * 64.0);
-			move.setY((1 - tmp.second) * 64.0);
+			tmp = GetCenter(me.getId(), vehicles, model::VehicleType::VEHICLE_HELICOPTER);
+			move.setX((64.0 + 32.0 - tmp.first) * 64.0);
+			move.setY((64.0 + 32.0 - tmp.second) * 64.0);
 			break;
 		case 4:
-			tmp = GetSquare(me.getId(), vehicles, model::VehicleType::VEHICLE_FIGHTER);
-			move.setX((1 - tmp.first) * 64.0);
-			move.setY((1 - tmp.second) * 64.0);
+			tmp = GetCenter(me.getId(), vehicles, model::VehicleType::VEHICLE_FIGHTER);
+			move.setX((64.0 + 32.0 - tmp.first) * 64.0);
+			move.setY((64.0 + 32.0 - tmp.second) * 64.0);
 			break;
 		}
 	}
