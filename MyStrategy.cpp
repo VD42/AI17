@@ -106,6 +106,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		return;
 	}
 
+	/*
 	if (world.getTickIndex() == 10000 && me.getScore() == 0)
 		rush = true;
 
@@ -126,6 +127,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		}
 		return;
 	}
+	*/
 
 	if (world.getTickIndex() % 60 == 0)
 	{
