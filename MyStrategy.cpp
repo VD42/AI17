@@ -86,7 +86,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		move.setAction(model::ActionType::ACTION_CLEAR_AND_SELECT);
 		move.setRight(game.getWorldWidth());
 		move.setBottom(game.getWorldHeight());
-		switch (((world.getTickIndex() / 20) % 6))
+		switch (((world.getTickIndex() / 20) % 10))
 		{
 		case 0: move.setVehicleType(model::VehicleType::VEHICLE_IFV); break;
 		case 1: move.setVehicleType(model::VehicleType::VEHICLE_TANK); break;
@@ -94,6 +94,12 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		case 3: move.setVehicleType(model::VehicleType::VEHICLE_HELICOPTER); break;
 		case 4: move.setVehicleType(model::VehicleType::VEHICLE_FIGHTER); break;
 		case 5: break;
+		case 6:
+		case 7:
+		case 8:
+		case 9:
+			move.setAction(model::ActionType::ACTION_NONE);
+			break;
 		}
 	}
 
@@ -112,7 +118,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	{
 		move.setAction(model::ActionType::ACTION_MOVE);
 		std::pair<double, double> tmp;
-		switch (((world.getTickIndex() / 20) % 6))
+		switch (((world.getTickIndex() / 20) % 10))
 		{
 		case 0:
 			tmp = GetCenter(me.getId(), vehicles, model::VehicleType::VEHICLE_IFV);
@@ -147,6 +153,12 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				move.setAngle(PI);
 			else
 				move.setAngle(-PI);
+			break;
+		case 6:
+		case 7:
+		case 8:
+		case 9:
+			move.setAction(model::ActionType::ACTION_NONE);
 			break;
 		}
 	}
