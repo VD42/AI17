@@ -115,28 +115,28 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		{
 		case 0:
 			tmp = GetCenter(me.getId(), vehicles, model::VehicleType::VEHICLE_IFV);
-			move.setX((64.0 + 32.0 - tmp.first) * 64.0);
-			move.setY((64.0 + 32.0 - tmp.second) * 64.0);
+			move.setX(64.0 + 32.0 - tmp.first);
+			move.setY(64.0 + 32.0 - tmp.second);
 			break;
 		case 1:
 			tmp = GetCenter(me.getId(), vehicles, model::VehicleType::VEHICLE_TANK);
-			move.setX((64.0 + 32.0 - tmp.first) * 64.0);
-			move.setY((64.0 + 32.0 - tmp.second) * 64.0);
+			move.setX(64.0 + 32.0 - tmp.first);
+			move.setY(64.0 + 32.0 - tmp.second);
 			break;
 		case 2: 
 			tmp = GetCenter(me.getId(), vehicles, model::VehicleType::VEHICLE_ARRV);
-			move.setX((64.0 + 32.0 - tmp.first) * 64.0);
-			move.setY((64.0 + 32.0 - tmp.second) * 64.0);
+			move.setX(64.0 + 32.0 - tmp.first);
+			move.setY(64.0 + 32.0 - tmp.second);
 			break;
 		case 3: 
 			tmp = GetCenter(me.getId(), vehicles, model::VehicleType::VEHICLE_HELICOPTER);
-			move.setX((64.0 + 32.0 - tmp.first) * 64.0);
-			move.setY((64.0 + 32.0 - tmp.second) * 64.0);
+			move.setX(64.0 + 32.0 - tmp.first);
+			move.setY(64.0 + 32.0 - tmp.second);
 			break;
 		case 4:
 			tmp = GetCenter(me.getId(), vehicles, model::VehicleType::VEHICLE_FIGHTER);
-			move.setX((64.0 + 32.0 - tmp.first) * 64.0);
-			move.setY((64.0 + 32.0 - tmp.second) * 64.0);
+			move.setX(64.0 + 32.0 - tmp.first);
+			move.setY(64.0 + 32.0 - tmp.second);
 			break;
 		}
 	}
