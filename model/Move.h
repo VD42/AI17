@@ -18,10 +18,12 @@ namespace model {
         double x;
         double y;
         double angle;
+        double factor;
         double maxSpeed;
         double maxAngularSpeed;
         VehicleType vehicleType;
         long long facilityId;
+        long long vehicleId;
     public:
         Move();
 
@@ -43,6 +45,8 @@ namespace model {
         void setY(const double y);
         double getAngle() const;
         void setAngle(const double angle);
+        double getFactor() const;
+        void setFactor(const double factor);
         double getMaxSpeed() const;
         void setMaxSpeed(const double maxSpeed);
         double getMaxAngularSpeed() const;
@@ -51,6 +55,8 @@ namespace model {
         void setVehicleType(const VehicleType vehicleType);
         long long getFacilityId() const;
         void setFacilityId(const long long facilityId);
+        long long getVehicleId() const;
+        void setVehicleId(const long long vehicleId);
     };
 }
 
