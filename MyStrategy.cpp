@@ -333,6 +333,8 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	// strategy
 
 	static int mode = 0;
+	static bool ground_good = false;
+	static bool aero_good = false;
 
 	if (mode == 0 && current_move == (int)moves.size() && last_move_time + moves[current_move - 1].m_wait <= world.getTickIndex())
 	{
@@ -362,7 +364,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		CheckField(field_a, fighter_pos);
 		CheckField(field_a, helicopter_pos);
 
-		if (field_g[1][0] && field_g[1][1] && field_g[1][2] && ((int)field_a[1][0] + (int)field_a[1][1] + (int)field_a[1][2]) == 2)
+		ground_good = ground_good | (field_g[1][0] && field_g[1][1] && field_g[1][2]);
+		aero_good = aero_good | (((int)field_a[1][0] + (int)field_a[1][1] + (int)field_a[1][2]) == 2);
+
+		if (ground_good && aero_good)
 		{
 			mode = 1;
 		}
@@ -378,11 +383,49 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			DoStartMove(game, moves, model::VehicleType::HELICOPTER, GetStartMove(field_a, helicopter_pos));
 
 			if (moves.size() != moves_size)
-				moves.back().m_wait = (int)(74.0 / (game.getTankSpeed() * 0.6) + 0.5);
+				moves.back().m_wait = (int)(74.0 / (game.getTankSpeed() * 0.8) + 0.5);
 		}
 	}
 
 	if (mode == 1 && current_move == (int)moves.size() && last_move_time + moves[current_move - 1].m_wait <= world.getTickIndex())
+	{
+		for (int i = 0; i < 5; i++)
+		{
+			{
+				CMove sel_move;
+				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+				sel_move.setLeft(0.0);
+				sel_move.setTop(74.0 + 18.0 - 0.1 + i * 6.0);
+				sel_move.setRight(game.getWorldWidth());
+				sel_move.setBottom(74.0 + 18.0 + 0.1 + i * 6.0);
+				moves.push_back(sel_move);
+				CMove move_move;
+				move_move.setAction(model::ActionType::MOVE);
+				move_move.setX(0.0);
+				move_move.setY(-6.0 - 12.0 * (4 - i));
+				moves.push_back(move_move);
+			}
+			{
+				CMove sel_move;
+				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+				sel_move.setLeft(0.0);
+				sel_move.setTop(74.0 + 18.0 + 54.0 - 0.1 - i * 6.0);
+				sel_move.setRight(game.getWorldWidth());
+				sel_move.setBottom(74.0 + 18.0 + 54.0 + 0.1 - i * 6.0);
+				moves.push_back(sel_move);
+				CMove move_move;
+				move_move.setAction(model::ActionType::MOVE);
+				move_move.setX(0.0);
+				move_move.setY(6.0 + 12.0 * (4 - i));
+				if (i == 4)
+					move_move.m_wait = (int)(54.0 / (game.getTankSpeed() * 0.8) + 0.5);
+				moves.push_back(move_move);
+			}
+		}
+		mode = 2;
+	}
+
+	if (mode == 2 && current_move == (int)moves.size() && last_move_time + moves[current_move - 1].m_wait <= world.getTickIndex())
 	{
 		{
 			CMove sel_move;
@@ -394,26 +437,114 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			moves.push_back(sel_move);
 			CMove move_move;
 			move_move.setAction(model::ActionType::MOVE);
-			move_move.setX(14.0);
-			move_move.setY(0.0);
+			move_move.setX(0.0);
+			move_move.setY(-6.0);
 			moves.push_back(move_move);
 		}
 		{
 			CMove sel_move;
 			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setLeft(74.0 * 2.0 + 7.0);
+			sel_move.setLeft(74.0 * 2 + 7.0);
 			sel_move.setTop(0.0);
 			sel_move.setRight(game.getWorldWidth());
 			sel_move.setBottom(game.getWorldHeight());
 			moves.push_back(sel_move);
 			CMove move_move;
 			move_move.setAction(model::ActionType::MOVE);
-			move_move.setX(-14.0);
-			move_move.setY(0.0);
-			move_move.m_wait = (int)(14.0 / (game.getTankSpeed() * 0.6) + 0.5);
+			move_move.setX(0.0);
+			move_move.setY(6.0);
+			move_move.m_wait = (int)(6.0 / (game.getTankSpeed() * 0.8) + 0.5);
 			moves.push_back(move_move);
 		}
-		mode = 2;
+		{
+			CMove sel_move;
+			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+			sel_move.setLeft(0.0);
+			sel_move.setTop(0.0);
+			sel_move.setRight(74.0 + 7.0);
+			sel_move.setBottom(game.getWorldHeight());
+			moves.push_back(sel_move);
+			CMove move_move;
+			move_move.setAction(model::ActionType::MOVE);
+			move_move.setX(74.0);
+			move_move.setY(0.0);
+			moves.push_back(move_move);
+		}
+		{
+			CMove sel_move;
+			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+			sel_move.setLeft(74.0 * 2 + 7.0);
+			sel_move.setTop(0.0);
+			sel_move.setRight(game.getWorldWidth());
+			sel_move.setBottom(game.getWorldHeight());
+			moves.push_back(sel_move);
+			CMove move_move;
+			move_move.setAction(model::ActionType::MOVE);
+			move_move.setX(-74.0);
+			move_move.setY(0.0);
+			move_move.m_wait = (int)(74.0 / (game.getTankSpeed() * 0.8) + 0.5);
+			moves.push_back(move_move);
+		}
+		mode = 3;
+	}
+
+	if (mode == 3 && current_move == (int)moves.size() && last_move_time + moves[current_move - 1].m_wait <= world.getTickIndex())
+	{
+		{
+			CMove sel_move;
+			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+			sel_move.setLeft(0.0);
+			sel_move.setTop(0.0);
+			sel_move.setRight(game.getWorldWidth());
+			sel_move.setBottom(game.getWorldHeight());
+			moves.push_back(sel_move);
+			CMove scale_move;
+			scale_move.setAction(model::ActionType::SCALE);
+			scale_move.setX(92.0 + 27.0);
+			scale_move.setY(92.0 + 27.0);
+			scale_move.setFactor(0.1);
+			scale_move.m_wait = (int)(54.0 / (game.getTankSpeed() * 0.8) + 0.5);
+			moves.push_back(scale_move);
+		}
+		{
+			CMove sel_move;
+			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+			sel_move.setLeft(0.0);
+			sel_move.setTop(0.0);
+			sel_move.setRight(game.getWorldWidth());
+			sel_move.setBottom(game.getWorldHeight());
+			moves.push_back(sel_move);
+			CMove rotate_move;
+			rotate_move.setAction(model::ActionType::ROTATE);
+			rotate_move.setX(92.0 + 27.0);
+			rotate_move.setY(92.0 + 27.0);
+			rotate_move.setAngle(PI / 4.0);
+			rotate_move.setMaxAngularSpeed(PI / 1000.0);
+			rotate_move.m_wait = (int)(54.0 / (game.getTankSpeed() * 0.8) + 0.5);
+			moves.push_back(rotate_move);
+		}
+		mode = 4;
+	}
+
+	if (mode == 4 && current_move == (int)moves.size() && last_move_time + moves[current_move - 1].m_wait <= world.getTickIndex())
+	{
+		if (world.getTickIndex() % 60 == 0)
+		{
+			CMove sel_move;
+			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+			sel_move.setLeft(0.0);
+			sel_move.setTop(0.0);
+			sel_move.setRight(game.getWorldWidth());
+			sel_move.setBottom(game.getWorldHeight());
+			moves.push_back(sel_move);
+			CMove scale_move;
+			scale_move.setAction(model::ActionType::SCALE);
+			scale_move.setX(92.0 + 27.0);
+			scale_move.setY(92.0 + 27.0);
+			scale_move.setFactor(0.1);
+			scale_move.m_wait = (int)(54.0 / (game.getTankSpeed() * 0.8) + 0.5);
+			moves.push_back(scale_move);
+		}
 	}
 
 	// get move
@@ -427,6 +558,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			new_move.setAngle(mv.getAngle());
 			new_move.setBottom(mv.getBottom());
 			new_move.setFacilityId(mv.getFacilityId());
+			new_move.setFactor(mv.getFactor());
 			new_move.setGroup(mv.getGroup());
 			new_move.setLeft(mv.getLeft());
 			new_move.setMaxAngularSpeed(mv.getMaxAngularSpeed());
