@@ -9,8 +9,8 @@
 class CMove : public model::Move
 {
 public:
-	int m_wait;
-	CMove() : model::Move(), m_wait(0) {}
+	bool m_wait_completion;
+	CMove() : model::Move(), m_wait_completion(false) {}
 };
 
 std::pair<double, double> GetCenter(int pid, std::vector<model::Vehicle> const& vehicles, model::VehicleType type)
@@ -41,8 +41,112 @@ void CheckField(std::vector<std::vector<bool>> & field, std::pair<double, double
 	field[(int)(pos.second / 72.0)][(int)(pos.first / 72.0)] = true;
 }
 
-int GetStartMove(std::vector<std::vector<bool>> & field, std::pair<double, double> pos)
+int GetStartMove0(std::vector<std::vector<bool>> & field, std::pair<double, double> pos)
 {
+	int X = (int)(pos.first / 72.0);
+	int Y = (int)(pos.second / 72.0);
+
+	switch (X)
+	{
+	case 0:
+		switch (Y)
+		{
+		case 0:
+			if (field[1][X])
+			{
+				return 0; // wait
+			}
+			else
+			{
+				field[1][X] = true;
+				return 4; // down
+			}
+			break;
+		case 1:
+			return 0; // nothing
+			break;
+		case 2:
+			if (field[1][X])
+			{
+				return 0; // wait
+			}
+			else
+			{
+				field[1][X] = true;
+				return 2; // up
+			}
+			break;
+		}
+		break;
+	case 1:
+		switch (Y)
+		{
+		case 0:
+			if (field[1][X])
+			{
+				return 0; // wait
+			}
+			else
+			{
+				field[1][X] = true;
+				return 4; // down
+			}
+			break;
+		case 1:
+			return 0; // nothing
+			break;
+		case 2:
+			if (field[1][X])
+			{
+				return 0; // wait
+			}
+			else
+			{
+				field[1][X] = true;
+				return 2; // up
+			}
+			break;
+		}
+		break;
+	case 2:
+		switch (Y)
+		{
+		case 0:
+			if (field[1][X])
+			{
+				return 0; // wait
+			}
+			else
+			{
+				field[1][X] = true;
+				return 4; // down
+			}
+			break;
+		case 1:
+			return 0; // nothing
+			break;
+		case 2:
+			if (field[1][X])
+			{
+				return 0; // wait
+			}
+			else
+			{
+				field[1][X] = true;
+				return 2; // up
+			}
+			break;
+		}
+		break;
+	}
+	return 0;
+}
+
+int GetStartMove1(std::vector<std::vector<bool>> & field, std::pair<double, double> pos, int dir)
+{
+	if (dir != 0)
+		return dir;
+
 	int X = (int)(pos.first / 72.0);
 	int Y = (int)(pos.second / 72.0);
 
@@ -318,17 +422,30 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	static std::vector<model::Vehicle> vehicles;
 	static std::vector<CMove> moves = { CMove() };
 	static int current_move = 1;
-	static int last_move_time = 0;
+	static int last_moving_move = 0;
 
 	// update vehicles list
 
 	for (auto const& v : world.getNewVehicles())
 		vehicles.push_back(v);
 
+	bool moving = false;
+
 	for (auto const& u : world.getVehicleUpdates())
 		for (auto & v : vehicles)
 			if (u.getId() == v.getId())
+			{
+				if (!moving && v.getPlayerId() == me.getId() && u.getDurability() != 0 && (u.getX() != v.getX() || u.getY() != v.getY()))
+					moving = true;
 				v = model::Vehicle(v, u);
+			}
+
+	if (moving)
+		last_moving_move = world.getTickIndex();
+
+	bool stopped = false;
+	if (last_moving_move + 5 < world.getTickIndex())
+		stopped = true;
 
 	// strategy
 
@@ -336,7 +453,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	static bool ground_good = false;
 	static bool aero_good = false;
 
-	if (mode == 0 && current_move == (int)moves.size() && last_move_time + moves[current_move - 1].m_wait <= world.getTickIndex())
+	if (mode == 0 && current_move == (int)moves.size() && (!moves[current_move - 1].m_wait_completion || stopped))
 	{
 		std::vector<std::vector<bool>> field_g = {
 			{ false, false, false },
@@ -375,19 +492,33 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		{
 			auto moves_size = moves.size();
 
-			DoStartMove(game, moves, model::VehicleType::ARRV, GetStartMove(field_g, arrv_pos));
-			DoStartMove(game, moves, model::VehicleType::IFV, GetStartMove(field_g, ifv_pos));
-			DoStartMove(game, moves, model::VehicleType::TANK, GetStartMove(field_g, tank_pos));
+			int arrv0 = GetStartMove0(field_g, arrv_pos);
+			int ifv0 = GetStartMove0(field_g, ifv_pos);
+			int tank0 = GetStartMove0(field_g, tank_pos);
 
-			DoStartMove(game, moves, model::VehicleType::FIGHTER, GetStartMove(field_a, fighter_pos));
-			DoStartMove(game, moves, model::VehicleType::HELICOPTER, GetStartMove(field_a, helicopter_pos));
+			int fighter0 = GetStartMove0(field_a, fighter_pos);
+			int helicopter0 = GetStartMove0(field_a, helicopter_pos);
+
+			arrv0 = GetStartMove1(field_g, arrv_pos, arrv0);
+			ifv0 = GetStartMove1(field_g, ifv_pos, ifv0);
+			tank0 = GetStartMove1(field_g, tank_pos, tank0);
+
+			fighter0 = GetStartMove1(field_a, fighter_pos, fighter0);
+			helicopter0 = GetStartMove1(field_a, helicopter_pos, helicopter0);
+
+			DoStartMove(game, moves, model::VehicleType::ARRV, arrv0);
+			DoStartMove(game, moves, model::VehicleType::IFV, ifv0);
+			DoStartMove(game, moves, model::VehicleType::TANK, tank0);
+
+			DoStartMove(game, moves, model::VehicleType::FIGHTER, fighter0);
+			DoStartMove(game, moves, model::VehicleType::HELICOPTER, helicopter0);
 
 			if (moves.size() != moves_size)
-				moves.back().m_wait = (int)(74.0 / (game.getTankSpeed() * 0.8) + 0.5);
+				moves.back().m_wait_completion = true;
 		}
 	}
 
-	if (mode == 1 && current_move == (int)moves.size() && last_move_time + moves[current_move - 1].m_wait <= world.getTickIndex())
+	if (mode == 1 && current_move == (int)moves.size() && (!moves[current_move - 1].m_wait_completion || stopped))
 	{
 		for (int i = 0; i < 5; i++)
 		{
@@ -418,14 +549,14 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				move_move.setX(0.0);
 				move_move.setY(6.0 + 12.0 * (4 - i));
 				if (i == 4)
-					move_move.m_wait = (int)(54.0 / (game.getTankSpeed() * 0.8) + 0.5);
+					move_move.m_wait_completion = true;
 				moves.push_back(move_move);
 			}
 		}
 		mode = 2;
 	}
 
-	if (mode == 2 && current_move == (int)moves.size() && last_move_time + moves[current_move - 1].m_wait <= world.getTickIndex())
+	if (mode == 2 && current_move == (int)moves.size() && (!moves[current_move - 1].m_wait_completion || stopped))
 	{
 		{
 			CMove sel_move;
@@ -453,7 +584,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			move_move.setAction(model::ActionType::MOVE);
 			move_move.setX(0.0);
 			move_move.setY(6.0);
-			move_move.m_wait = (int)(6.0 / (game.getTankSpeed() * 0.8) + 0.5);
+			move_move.m_wait_completion = true;
 			moves.push_back(move_move);
 		}
 		{
@@ -482,13 +613,13 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			move_move.setAction(model::ActionType::MOVE);
 			move_move.setX(-74.0);
 			move_move.setY(0.0);
-			move_move.m_wait = (int)(74.0 / (game.getTankSpeed() * 0.8) + 0.5);
+			move_move.m_wait_completion = true;
 			moves.push_back(move_move);
 		}
 		mode = 3;
 	}
 
-	if (mode == 3 && current_move == (int)moves.size() && last_move_time + moves[current_move - 1].m_wait <= world.getTickIndex())
+	if (mode == 3 && current_move == (int)moves.size() && (!moves[current_move - 1].m_wait_completion || stopped))
 	{
 		{
 			CMove sel_move;
@@ -503,7 +634,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			scale_move.setX(92.0 + 27.0);
 			scale_move.setY(92.0 + 27.0);
 			scale_move.setFactor(0.1);
-			scale_move.m_wait = (int)(54.0 / (game.getTankSpeed() * 0.8) + 0.5);
+			scale_move.m_wait_completion = true;
 			moves.push_back(scale_move);
 		}
 		{
@@ -519,14 +650,14 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			rotate_move.setX(92.0 + 27.0);
 			rotate_move.setY(92.0 + 27.0);
 			rotate_move.setAngle(PI / 4.0);
-			rotate_move.setMaxAngularSpeed(PI / 1000.0);
-			rotate_move.m_wait = (int)(54.0 / (game.getTankSpeed() * 0.8) + 0.5);
+			rotate_move.setMaxAngularSpeed(PI / 800.0);
+			rotate_move.m_wait_completion = true;
 			moves.push_back(rotate_move);
 		}
 		mode = 4;
 	}
 
-	if (mode == 4 && current_move == (int)moves.size() && last_move_time + moves[current_move - 1].m_wait <= world.getTickIndex())
+	if (mode == 4 && current_move == (int)moves.size() && (!moves[current_move - 1].m_wait_completion || stopped))
 	{
 		if (world.getTickIndex() % 60 == 0)
 		{
@@ -542,14 +673,14 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			scale_move.setX(92.0 + 27.0);
 			scale_move.setY(92.0 + 27.0);
 			scale_move.setFactor(0.1);
-			scale_move.m_wait = (int)(54.0 / (game.getTankSpeed() * 0.8) + 0.5);
+			scale_move.m_wait_completion = true;
 			moves.push_back(scale_move);
 		}
 	}
 
 	// get move
 
-	if (last_move_time + moves[current_move - 1].m_wait <= world.getTickIndex())
+	if (!moves[current_move - 1].m_wait_completion || stopped)
 	{
 		if ((int)moves.size() > current_move && me.getRemainingActionCooldownTicks() == 0)
 		{
@@ -570,7 +701,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			new_move.setY(mv.getY());
 
 			current_move++;
-			last_move_time = world.getTickIndex();
 		}
 	}
 }
