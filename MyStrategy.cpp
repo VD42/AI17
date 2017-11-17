@@ -660,10 +660,18 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	static int nuclearTickIndex = -1;
 	static double nuclearScaleX = 0.0;
 	static double nuclearScaleY = 0.0;
+	static int nuclearWaitTicks = 0;
+
+	if (nuclearTickIndex == -1 && nuclearWaitTicks > 0)
+		nuclearWaitTicks--;
 
 	if (mode == 4 && current_move == (int)moves.size() && (!moves[current_move - 1].m_wait_completion || stopped))
 	{
-		if (nuclearTickIndex != -1)
+		if (nuclearTickIndex == -1 && nuclearWaitTicks > 0)
+		{
+			// wait
+		}
+		else if (nuclearTickIndex != -1)
 		{
 			if (nuclearTickIndex <= world.getTickIndex())
 			{
@@ -679,30 +687,48 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				scale_move.setX(nuclearScaleX);
 				scale_move.setY(nuclearScaleY);
 				scale_move.setFactor(0.1);
-				scale_move.m_wait_completion = true;
 				moves.push_back(scale_move);
 				nuclearTickIndex = -1;
 			}
 		}
 		else if (world.getOpponentPlayer().getNextNuclearStrikeTickIndex() != -1)
 		{
-			nuclearTickIndex = world.getOpponentPlayer().getNextNuclearStrikeTickIndex();
 			nuclearScaleX = world.getOpponentPlayer().getNextNuclearStrikeX();
 			nuclearScaleY = world.getOpponentPlayer().getNextNuclearStrikeY();
 
-			CMove sel_move;
-			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setLeft(0.0);
-			sel_move.setTop(0.0);
-			sel_move.setRight(game.getWorldWidth());
-			sel_move.setBottom(game.getWorldHeight());
-			moves.push_back(sel_move);
-			CMove scale_move;
-			scale_move.setAction(model::ActionType::SCALE);
-			scale_move.setX(nuclearScaleX);
-			scale_move.setY(nuclearScaleY);
-			scale_move.setFactor(10.0);
-			moves.push_back(scale_move);
+			bool detected = false;
+			for (auto const& v : vehicles)
+			{
+				if (v.getPlayerId() != me.getId())
+					continue;
+				if (v.getDurability() == 0)
+					continue;
+				if (v.getDistanceTo(nuclearScaleX, nuclearScaleY) < game.getTacticalNuclearStrikeRadius())
+				{
+					detected = true;
+					break;
+				}
+			}
+
+			if (detected)
+			{
+				nuclearTickIndex = world.getOpponentPlayer().getNextNuclearStrikeTickIndex();
+				nuclearWaitTicks = nuclearTickIndex - world.getTickIndex();
+
+				CMove sel_move;
+				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+				sel_move.setLeft(0.0);
+				sel_move.setTop(0.0);
+				sel_move.setRight(game.getWorldWidth());
+				sel_move.setBottom(game.getWorldHeight());
+				moves.push_back(sel_move);
+				CMove scale_move;
+				scale_move.setAction(model::ActionType::SCALE);
+				scale_move.setX(nuclearScaleX);
+				scale_move.setY(nuclearScaleY);
+				scale_move.setFactor(10.0);
+				moves.push_back(scale_move);
+			}
 		}
 		else if (me.getRemainingNuclearStrikeCooldownTicks() == 0)
 		{
