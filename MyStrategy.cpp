@@ -657,9 +657,58 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		mode = 4;
 	}
 
+	static int nuclearTickIndex = -1;
+	static double nuclearScaleX = 0.0;
+	static double nuclearScaleY = 0.0;
+
 	if (mode == 4 && current_move == (int)moves.size() && (!moves[current_move - 1].m_wait_completion || stopped))
 	{
-		if (world.getTickIndex() % 60 == 0)
+		if (nuclearTickIndex != -1)
+		{
+			if (nuclearTickIndex <= world.getTickIndex())
+			{
+				CMove sel_move;
+				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+				sel_move.setLeft(0.0);
+				sel_move.setTop(0.0);
+				sel_move.setRight(game.getWorldWidth());
+				sel_move.setBottom(game.getWorldHeight());
+				moves.push_back(sel_move);
+				CMove scale_move;
+				scale_move.setAction(model::ActionType::SCALE);
+				scale_move.setX(nuclearScaleX);
+				scale_move.setY(nuclearScaleY);
+				scale_move.setFactor(0.1);
+				scale_move.m_wait_completion = true;
+				moves.push_back(scale_move);
+				nuclearTickIndex = -1;
+			}
+		}
+		else if (world.getOpponentPlayer().getNextNuclearStrikeTickIndex() != -1)
+		{
+			nuclearTickIndex = world.getOpponentPlayer().getNextNuclearStrikeTickIndex();
+			nuclearScaleX = world.getOpponentPlayer().getNextNuclearStrikeX();
+			nuclearScaleY = world.getOpponentPlayer().getNextNuclearStrikeY();
+
+			CMove sel_move;
+			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+			sel_move.setLeft(0.0);
+			sel_move.setTop(0.0);
+			sel_move.setRight(game.getWorldWidth());
+			sel_move.setBottom(game.getWorldHeight());
+			moves.push_back(sel_move);
+			CMove scale_move;
+			scale_move.setAction(model::ActionType::SCALE);
+			scale_move.setX(nuclearScaleX);
+			scale_move.setY(nuclearScaleY);
+			scale_move.setFactor(10.0);
+			moves.push_back(scale_move);
+		}
+		else if (me.getRemainingNuclearStrikeCooldownTicks() == 0)
+		{
+			// need nuclear strike
+		}
+		else if (world.getTickIndex() % 60 == 0)
 		{
 			CMove sel_move;
 			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
