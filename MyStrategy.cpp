@@ -49,7 +49,12 @@ enum class dir_enum
 	left,
 	top,
 	right,
-	bottom
+	bottom,
+
+	top_ch,
+	top_ach,
+	bot_ch,
+	bot_ach
 };
 
 std::set<dir_enum> GetPossibleMoves(std::vector<std::vector<bool>> const& field, std::pair<int, int> ipos)
@@ -114,17 +119,7 @@ std::set<dir_enum> GetPossibleMoves(std::vector<std::vector<bool>> const& field,
 dir_enum GetStartMove0(std::vector<std::vector<bool>> & field, std::pair<int, int> ipos, bool tank, std::map<std::pair<int, int>, dir_enum> & additional_moves)
 {
 	if (additional_moves.find(ipos) != additional_moves.end())
-	{
-		auto mv = additional_moves[ipos];
-		switch (mv)
-		{
-		case dir_enum::left: field[ipos.first - 1][ipos.second] = true; break;
-		case dir_enum::top: field[ipos.first][ipos.second - 1] = true; break;
-		case dir_enum::right: field[ipos.first + 1][ipos.second] = true; break;
-		case dir_enum::bottom: field[ipos.first][ipos.second + 1] = true; break;
-		}
-		return mv;
-	}
+		return additional_moves[ipos];
 
 	auto possible_moves = GetPossibleMoves(field, ipos);
 
@@ -140,9 +135,17 @@ dir_enum GetStartMove0(std::vector<std::vector<bool>> & field, std::pair<int, in
 			auto possible_moves_2 = GetPossibleMoves(field, { 0, 1 });
 			if (possible_moves_2.find(dir_enum::right) != possible_moves_2.end())
 			{
+				if (!field[1][0])
+				{
+					field[1][0] = true;
+					field[1][1] = true;
+					return dir_enum::bot_ch;
+				}
+				field[1][1] = true;
 				additional_moves[{ 0, 1 }] = dir_enum::right;
 				return dir_enum::wait;
 			}
+			field[2][1] = true;
 			additional_moves[{ 1, 1 }] = dir_enum::right;
 			field[1][0] = true;
 			return dir_enum::right;
@@ -161,11 +164,25 @@ dir_enum GetStartMove0(std::vector<std::vector<bool>> & field, std::pair<int, in
 			auto possible_moves_2 = GetPossibleMoves(field, { 1, 1 });
 			if (possible_moves_2.find(dir_enum::left) != possible_moves_2.end() && !field[0][0] && !field[0][2])
 			{
+				if (!field[0][0])
+				{
+					field[0][0] = true;
+					field[0][1] = true;
+					return dir_enum::bot_ach;
+				}
+				field[0][1] = true;
 				additional_moves[{ 1, 1 }] = dir_enum::left;
 				return dir_enum::wait;
 			}
 			if (possible_moves_2.find(dir_enum::right) != possible_moves_2.end() && !field[2][0] && !field[2][2])
 			{
+				if (!field[2][0])
+				{
+					field[2][0] = true;
+					field[2][1] = true;
+					return dir_enum::bot_ch;
+				}
+				field[2][1] = true;
 				additional_moves[{ 1, 1 }] = dir_enum::right;
 				return dir_enum::wait;
 			}
@@ -185,9 +202,17 @@ dir_enum GetStartMove0(std::vector<std::vector<bool>> & field, std::pair<int, in
 			auto possible_moves_2 = GetPossibleMoves(field, { 2, 1 });
 			if (possible_moves_2.find(dir_enum::left) != possible_moves_2.end())
 			{
+				if (!field[1][0])
+				{
+					field[1][0] = true;
+					field[1][1] = true;
+					return dir_enum::bot_ach;
+				}
+				field[1][1] = true;
 				additional_moves[{ 2, 1 }] = dir_enum::left;
 				return dir_enum::wait;
 			}
+			field[0][1] = true;
 			additional_moves[{ 1, 1 }] = dir_enum::left;
 			field[1][0] = true;
 			return dir_enum::left;
@@ -218,12 +243,20 @@ dir_enum GetStartMove0(std::vector<std::vector<bool>> & field, std::pair<int, in
 			auto possible_moves_2 = GetPossibleMoves(field, { 0, 1 });
 			if (possible_moves_2.find(dir_enum::right) != possible_moves_2.end())
 			{
+				if (!field[1][2])
+				{
+					field[1][2] = true;
+					field[1][1] = true;
+					return dir_enum::top_ach;
+				}
+				field[1][1] = true;
 				additional_moves[{ 0, 1 }] = dir_enum::right;
 				return dir_enum::wait;
 			}
+			field[2][1] = true;
 			additional_moves[{ 1, 1 }] = dir_enum::right;
 			field[1][0] = true;
-			return dir_enum::left;
+			return dir_enum::right;
 		}
 		return dir_enum::wait;
 	}
@@ -239,11 +272,25 @@ dir_enum GetStartMove0(std::vector<std::vector<bool>> & field, std::pair<int, in
 			auto possible_moves_2 = GetPossibleMoves(field, { 1, 1 });
 			if (possible_moves_2.find(dir_enum::left) != possible_moves_2.end() && !field[0][0] && !field[0][2])
 			{
+				if (!field[0][2])
+				{
+					field[0][2] = true;
+					field[0][1] = true;
+					return dir_enum::top_ch;
+				}
+				field[0][1] = true;
 				additional_moves[{ 1, 1 }] = dir_enum::left;
 				return dir_enum::wait;
 			}
 			if (possible_moves_2.find(dir_enum::right) != possible_moves_2.end() && !field[2][0] && !field[2][2])
 			{
+				if (!field[2][2])
+				{
+					field[2][2] = true;
+					field[2][1] = true;
+					return dir_enum::top_ach;
+				}
+				field[2][1] = true;
 				additional_moves[{ 1, 1 }] = dir_enum::right;
 				return dir_enum::wait;
 			}
@@ -263,9 +310,17 @@ dir_enum GetStartMove0(std::vector<std::vector<bool>> & field, std::pair<int, in
 			auto possible_moves_2 = GetPossibleMoves(field, { 2, 1 });
 			if (possible_moves_2.find(dir_enum::left) != possible_moves_2.end())
 			{
+				if (!field[1][2])
+				{
+					field[1][2] = true;
+					field[1][1] = true;
+					return dir_enum::top_ch;
+				}
+				field[1][1] = true;
 				additional_moves[{ 2, 1 }] = dir_enum::left;
 				return dir_enum::wait;
 			}
+			field[0][1] = true;
 			additional_moves[{ 1, 1 }] = dir_enum::left;
 			field[1][2] = true;
 			return dir_enum::left;
@@ -287,6 +342,12 @@ dir_enum GetStartMove1(std::vector<std::vector<bool>> & field, std::pair<int, in
 	{
 		if (possible_moves.find(dir_enum::right) != possible_moves.end())
 		{
+			if (!field[1][1])
+			{
+				field[1][0] = true;
+				field[1][1] = true;
+				return dir_enum::bot_ch;
+			}
 			field[1][0] = true;
 			return dir_enum::right;
 		}
@@ -297,12 +358,14 @@ dir_enum GetStartMove1(std::vector<std::vector<bool>> & field, std::pair<int, in
 		if (!field[0][1] && possible_moves.find(dir_enum::left) != possible_moves.end())
 		{
 			field[0][0] = true;
-			return dir_enum::left;
+			field[0][1] = true;
+			return dir_enum::bot_ach;
 		}
 		if (!field[2][1] && possible_moves.find(dir_enum::right) != possible_moves.end())
 		{
 			field[2][0] = true;
-			return dir_enum::right;
+			field[2][1] = true;
+			return dir_enum::bot_ch;
 		}
 		return dir_enum::wait;
 	}
@@ -310,6 +373,12 @@ dir_enum GetStartMove1(std::vector<std::vector<bool>> & field, std::pair<int, in
 	{
 		if (possible_moves.find(dir_enum::left) != possible_moves.end())
 		{
+			if (!field[1][1])
+			{
+				field[1][0] = true;
+				field[1][1] = true;
+				return dir_enum::bot_ach;
+			}
 			field[1][0] = true;
 			return dir_enum::left;
 		}
@@ -331,6 +400,12 @@ dir_enum GetStartMove1(std::vector<std::vector<bool>> & field, std::pair<int, in
 	{
 		if (possible_moves.find(dir_enum::right) != possible_moves.end())
 		{
+			if (!field[1][1])
+			{
+				field[1][2] = true;
+				field[1][1] = true;
+				return dir_enum::top_ach;
+			}
 			field[1][2] = true;
 			return dir_enum::right;
 		}
@@ -341,12 +416,14 @@ dir_enum GetStartMove1(std::vector<std::vector<bool>> & field, std::pair<int, in
 		if (!field[0][1] && possible_moves.find(dir_enum::left) != possible_moves.end())
 		{
 			field[0][2] = true;
-			return dir_enum::left;
+			field[0][1] = true;
+			return dir_enum::top_ch;
 		}
 		if (!field[2][1] && possible_moves.find(dir_enum::right) != possible_moves.end())
 		{
 			field[2][2] = true;
-			return dir_enum::right;
+			field[2][1] = true;
+			return dir_enum::top_ach;
 		}
 		return dir_enum::wait;
 	}
@@ -354,6 +431,12 @@ dir_enum GetStartMove1(std::vector<std::vector<bool>> & field, std::pair<int, in
 	{
 		if (possible_moves.find(dir_enum::left) != possible_moves.end())
 		{
+			if (!field[1][1])
+			{
+				field[1][2] = true;
+				field[1][1] = true;
+				return dir_enum::top_ch;
+			}
 			field[1][2] = true;
 			return dir_enum::left;
 		}
@@ -363,7 +446,7 @@ dir_enum GetStartMove1(std::vector<std::vector<bool>> & field, std::pair<int, in
 	throw 0; // impossible
 }
 
-void DoStartMove(model::Game const& game, std::vector<CMove> & moves, model::VehicleType type, dir_enum dir)
+void DoStartMove(model::Game const& game, std::vector<CMove> & moves, model::VehicleType type, std::pair<int, int> pos, dir_enum dir)
 {
 	switch (dir)
 	{
@@ -435,6 +518,78 @@ void DoStartMove(model::Game const& game, std::vector<CMove> & moves, model::Veh
 			move_move.setX(0.0);
 			move_move.setY(74.0);
 			moves.push_back(move_move);
+		}
+		return;
+	case dir_enum::top_ch:
+		{
+			CMove sel_move;
+			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+			sel_move.setLeft(0.0);
+			sel_move.setTop(0.0);
+			sel_move.setRight(game.getWorldWidth());
+			sel_move.setBottom(game.getWorldHeight());
+			sel_move.setVehicleType(type);
+			moves.push_back(sel_move);
+			CMove rotate_move;
+			rotate_move.setAction(model::ActionType::ROTATE);
+			rotate_move.setX(45.0 + (pos.first) * 74.0);
+			rotate_move.setY(45.0 + (pos.second - 1) * 74.0);
+			rotate_move.setAngle(PI / 2.0);
+			moves.push_back(rotate_move);
+		}
+		return;
+	case dir_enum::top_ach:
+		{
+			CMove sel_move;
+			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+			sel_move.setLeft(0.0);
+			sel_move.setTop(0.0);
+			sel_move.setRight(game.getWorldWidth());
+			sel_move.setBottom(game.getWorldHeight());
+			sel_move.setVehicleType(type);
+			moves.push_back(sel_move);
+			CMove rotate_move;
+			rotate_move.setAction(model::ActionType::ROTATE);
+			rotate_move.setX(45.0 + (pos.first) * 74.0);
+			rotate_move.setY(45.0 + (pos.second - 1) * 74.0);
+			rotate_move.setAngle(-PI / 2.0);
+			moves.push_back(rotate_move);
+		}
+		return;
+	case dir_enum::bot_ch:
+		{
+			CMove sel_move;
+			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+			sel_move.setLeft(0.0);
+			sel_move.setTop(0.0);
+			sel_move.setRight(game.getWorldWidth());
+			sel_move.setBottom(game.getWorldHeight());
+			sel_move.setVehicleType(type);
+			moves.push_back(sel_move);
+			CMove rotate_move;
+			rotate_move.setAction(model::ActionType::ROTATE);
+			rotate_move.setX(45.0 + (pos.first) * 74.0);
+			rotate_move.setY(45.0 + (pos.second + 1) * 74.0);
+			rotate_move.setAngle(PI / 2.0);
+			moves.push_back(rotate_move);
+		}
+		return;
+	case dir_enum::bot_ach:
+		{
+			CMove sel_move;
+			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+			sel_move.setLeft(0.0);
+			sel_move.setTop(0.0);
+			sel_move.setRight(game.getWorldWidth());
+			sel_move.setBottom(game.getWorldHeight());
+			sel_move.setVehicleType(type);
+			moves.push_back(sel_move);
+			CMove rotate_move;
+			rotate_move.setAction(model::ActionType::ROTATE);
+			rotate_move.setX(45.0 + (pos.first) * 74.0);
+			rotate_move.setY(45.0 + (pos.second + 1) * 74.0);
+			rotate_move.setAngle(-PI / 2.0);
+			moves.push_back(rotate_move);
 		}
 		return;
 	}
@@ -542,12 +697,12 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			fighter0 = GetStartMove1(field_a, fighter_ipos, fighter0);
 			helicopter0 = GetStartMove1(field_a, helicopter_ipos, helicopter0);
 
-			DoStartMove(game, moves, model::VehicleType::ARRV, arrv0);
-			DoStartMove(game, moves, model::VehicleType::IFV, ifv0);
-			DoStartMove(game, moves, model::VehicleType::TANK, tank0);
+			DoStartMove(game, moves, model::VehicleType::TANK, tank_ipos, tank0);
+			DoStartMove(game, moves, model::VehicleType::ARRV, arrv_ipos, arrv0);
+			DoStartMove(game, moves, model::VehicleType::IFV, ifv_ipos, ifv0);
 
-			DoStartMove(game, moves, model::VehicleType::FIGHTER, fighter0);
-			DoStartMove(game, moves, model::VehicleType::HELICOPTER, helicopter0);
+			DoStartMove(game, moves, model::VehicleType::FIGHTER, fighter_ipos, fighter0);
+			DoStartMove(game, moves, model::VehicleType::HELICOPTER, helicopter_ipos, helicopter0);
 
 			if (moves.size() != moves_size)
 				moves.back().m_wait_completion = true;
