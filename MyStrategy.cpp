@@ -810,6 +810,8 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		mode = 3;
 	}
 
+	static double current_angle = PI / 4.0;
+
 	if (mode == 3 && current_move == (int)moves.size() && (!moves[current_move - 1].m_wait_completion || stopped))
 	{
 		{
@@ -840,7 +842,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			rotate_move.setAction(model::ActionType::ROTATE);
 			rotate_move.setX(92.0 + 27.0);
 			rotate_move.setY(92.0 + 27.0);
-			rotate_move.setAngle(PI / 4.0);
+			rotate_move.setAngle(current_angle);
 			rotate_move.setMaxAngularSpeed(PI / 800.0);
 			rotate_move.m_wait_completion = true;
 			moves.push_back(rotate_move);
@@ -943,20 +945,104 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		}
 		else if (world.getTickIndex() % 60 == 0)
 		{
-			CMove sel_move;
-			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setLeft(0.0);
-			sel_move.setTop(0.0);
-			sel_move.setRight(game.getWorldWidth());
-			sel_move.setBottom(game.getWorldHeight());
-			moves.push_back(sel_move);
-			CMove scale_move;
-			scale_move.setAction(model::ActionType::SCALE);
-			scale_move.setX(92.0 + 27.0);
-			scale_move.setY(92.0 + 27.0);
-			scale_move.setFactor(0.1);
-			scale_move.m_wait_completion = true;
-			moves.push_back(scale_move);
+			{
+				CMove sel_move;
+				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+				sel_move.setLeft(0.0);
+				sel_move.setTop(0.0);
+				sel_move.setRight(game.getWorldWidth());
+				sel_move.setBottom(game.getWorldHeight());
+				moves.push_back(sel_move);
+				CMove scale_move;
+				scale_move.setAction(model::ActionType::SCALE);
+				scale_move.setX(92.0 + 27.0);
+				scale_move.setY(92.0 + 27.0);
+				scale_move.setFactor(0.1);
+				scale_move.m_wait_completion = true;
+				moves.push_back(scale_move);
+			}
+			{
+				std::vector<std::vector<model::Vehicle const*>> groups;
+
+				for (auto const& v : vehicles)
+				{
+					if (v.getPlayerId() == me.getId())
+						continue;
+					if (v.getDurability() == 0)
+						continue;
+					bool found = false;
+					for (int i = 0; i < (int)groups.size(); i++)
+					{
+						if (found)
+							break;
+						for (int j = 0; j < (int)groups[i].size(); j++)
+						{
+							if (v.getDistanceTo(*groups[i][j]) < 20.0)
+							{
+								groups[i].push_back(&v);
+								found = true;
+								break;
+							}
+						}
+					}
+					if (!found)
+					{
+						groups.emplace_back();
+						groups.back().push_back(&v);
+					}
+				}
+
+				int minGroup = -1;
+				double minDistance = 1024.0;
+				double minX = 1024.0;
+				double minY = 1024.0;
+
+				for (int i = 0; i < (int)groups.size(); i++)
+				{
+					if (groups[i].size() < 50)
+						continue;
+					double X = 0.0;
+					double Y = 0.0;
+					for (int j = 0; j < (int)groups[i].size(); j++)
+					{
+						X += groups[i][j]->getX();
+						Y += groups[i][j]->getY();
+					}
+					X /= (double)groups[i].size();
+					Y /= (double)groups[i].size();
+					double distance = sqrt((92.0 + 27.0 - X) * (92.0 + 27.0 - X) + (92.0 + 27.0 - Y) * (92.0 + 27.0 - Y));
+					if (distance < minDistance)
+					{
+						minDistance = distance;
+						minX = X;
+						minY = Y;
+						minGroup = i;
+					}
+				}
+
+				if (minGroup != -1)
+				{
+					std::pair<double, double> normal = { cos(current_angle), sin(current_angle) };
+					double delta_angle = atan2(normal.first * (minY - 92.0 - 27.0) - normal.second * (minX - 92.0 - 27.0), normal.first * (minX - 92.0 - 27.0) + normal.second * (minY - 92.0 - 27.0));
+					current_angle += delta_angle;
+
+					CMove sel_move;
+					sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+					sel_move.setLeft(0.0);
+					sel_move.setTop(0.0);
+					sel_move.setRight(game.getWorldWidth());
+					sel_move.setBottom(game.getWorldHeight());
+					moves.push_back(sel_move);
+					CMove rotate_move;
+					rotate_move.setAction(model::ActionType::ROTATE);
+					rotate_move.setX(92.0 + 27.0);
+					rotate_move.setY(92.0 + 27.0);
+					rotate_move.setAngle(delta_angle);
+					rotate_move.setMaxAngularSpeed(PI / 800.0);
+					rotate_move.m_wait_completion = true;
+					moves.push_back(rotate_move);
+				}
+			}
 		}
 	}
 
