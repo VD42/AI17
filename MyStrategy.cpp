@@ -1134,7 +1134,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				rotate_move.setY(92.0 + 27.0);
 				rotate_move.setAngle(delta_angle);
 				rotate_move.setMaxAngularSpeed(PI / 800.0);
-				rotate_move.m_wait_completion = true;
 				moves.push_back(rotate_move);
 			}
 		}
