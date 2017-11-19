@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <set>
 #include <map>
+#include <functional>
 
 class CMove : public model::Move
 {
@@ -595,9 +596,67 @@ void DoStartMove(model::Game const& game, std::vector<CMove> & moves, model::Veh
 	}
 }
 
-bool CalcNuclear()
+std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(int pid, std::vector<model::Vehicle> const& vehicles)
 {
-	return false;
+	std::vector<std::vector<std::reference_wrapper<model::Vehicle const>>> groups;
+
+	for (auto const& v : vehicles)
+	{
+		if (v.getPlayerId() == pid)
+			continue;
+		if (v.getDurability() == 0)
+			continue;
+		bool found = false;
+		for (int i = 0; i < (int)groups.size(); i++)
+		{
+			if (found)
+				break;
+			for (int j = 0; j < (int)groups[i].size(); j++)
+			{
+				if (v.getDistanceTo(groups[i][j]) < 20.0)
+				{
+					groups[i].push_back(v);
+					found = true;
+					break;
+				}
+			}
+		}
+		if (!found)
+		{
+			groups.emplace_back();
+			groups.back().push_back(v);
+		}
+	}
+
+	int minGroup = -1;
+	double minDistance = 1024.0;
+	double minX = 1024.0;
+	double minY = 1024.0;
+
+	for (int i = 0; i < (int)groups.size(); i++)
+	{
+		if (groups[i].size() < 50)
+			continue;
+		double X = 0.0;
+		double Y = 0.0;
+		for (int j = 0; j < (int)groups[i].size(); j++)
+		{
+			X += groups[i][j].get().getX();
+			Y += groups[i][j].get().getY();
+		}
+		X /= (double)groups[i].size();
+		Y /= (double)groups[i].size();
+		double distance = sqrt((92.0 + 27.0 - X) * (92.0 + 27.0 - X) + (92.0 + 27.0 - Y) * (92.0 + 27.0 - Y));
+		if (distance < minDistance)
+		{
+			minDistance = distance;
+			minX = X;
+			minY = Y;
+			minGroup = i;
+		}
+	}
+
+	return std::make_pair(minGroup != -1, std::make_pair(minX, minY));
 }
 
 void MyStrategy::move(model::Player const& me, model::World const& world, model::Game const& game, model::Move & new_move)
@@ -939,12 +998,113 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				moves.push_back(scale_move);
 			}
 		}
-		else if (me.getRemainingNuclearStrikeCooldownTicks() == 0 && CalcNuclear())
-		{
-			// need nuclear strike
-		}
 		else if (world.getTickIndex() % 60 == 0)
 		{
+			auto target = GetNearestGroupCenter(me.getId(), vehicles);
+
+			auto GetVisionRange = [&] (model::VehicleType type) {
+				switch (type)
+				{
+				case model::VehicleType::ARRV: return game.getArrvVisionRange();
+				case model::VehicleType::FIGHTER: return game.getFighterVisionRange();
+				case model::VehicleType::HELICOPTER: return game.getHelicopterVisionRange();
+				case model::VehicleType::IFV: return game.getIfvVisionRange();
+				case model::VehicleType::TANK: return game.getTankVisionRange();
+				}
+				return 0.0;
+			};
+
+			auto GetTerrainWeatherVisionCoef = [&] (bool isAerial, model::TerrainType type1, model::WeatherType type2) {
+				if (!isAerial)
+				{
+					switch (type1)
+					{
+					case model::TerrainType::FOREST: return game.getForestTerrainVisionFactor();
+					case model::TerrainType::PLAIN: return game.getPlainTerrainVisionFactor();
+					case model::TerrainType::SWAMP: return game.getSwampTerrainVisionFactor();
+					}
+				}
+				else
+				{
+					switch (type2)
+					{
+					case model::WeatherType::CLEAR: return game.getClearWeatherVisionFactor();
+					case model::WeatherType::CLOUD: return game.getCloudWeatherVisionFactor();
+					case model::WeatherType::RAIN: return game.getRainWeatherVisionFactor();
+					}
+				}
+				return 0.0;
+			};
+
+			if (me.getRemainingNuclearStrikeCooldownTicks() == 0)
+			{
+				if (target.first && sqrt((target.second.first - 92.0 - 27.0) * (target.second.first - 92.0 - 27.0) + (target.second.second - 92.0 - 27.0) * (target.second.second - 92.0 - 27.0)) < game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6)
+				{
+					for (auto const& v : vehicles)
+					{
+						if (v.getPlayerId() != me.getId())
+							continue;
+						if (v.getDurability() == 0)
+							continue;
+						auto distance = v.getDistanceTo(target.second.first, target.second.second);
+						auto vrange = GetVisionRange(v.getType()) * GetTerrainWeatherVisionCoef(v.isAerial(), world.getTerrainByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)], world.getWeatherByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)]);
+						if (50.0 < distance && distance < 0.9 * vrange)
+						{
+							CMove nuclear_strike_move;
+							nuclear_strike_move.setAction(model::ActionType::TACTICAL_NUCLEAR_STRIKE);
+							nuclear_strike_move.setX(target.second.first);
+							nuclear_strike_move.setY(target.second.second);
+							nuclear_strike_move.setVehicleId(v.getId());
+							moves.push_back(nuclear_strike_move);
+							break;
+						}
+					}
+				}
+				else
+				{
+					double minX = 0.0;
+					double minY = 0.0;
+					double minDistance = 1024.0;
+					for (auto const& v : vehicles)
+					{
+						if (v.getPlayerId() == me.getId())
+							continue;
+						if (v.getDurability() == 0)
+							continue;
+						auto distance = v.getDistanceTo(92.0 + 27.0, 92.0 + 27.0);
+						if (distance < minDistance)
+						{
+							minX = v.getX();
+							minY = v.getY();
+							minDistance = distance;
+						}
+					}
+
+					if (minDistance < 512.0)
+					{
+						for (auto const& v : vehicles)
+						{
+							if (v.getPlayerId() != me.getId())
+								continue;
+							if (v.getDurability() == 0)
+								continue;
+							auto distance = v.getDistanceTo(minX, minY);
+							auto vrange = GetVisionRange(v.getType()) * GetTerrainWeatherVisionCoef(v.isAerial(), world.getTerrainByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)], world.getWeatherByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)]);
+							if (50.0 < distance && distance < 0.9 * vrange)
+							{
+								CMove nuclear_strike_move;
+								nuclear_strike_move.setAction(model::ActionType::TACTICAL_NUCLEAR_STRIKE);
+								nuclear_strike_move.setX(minX);
+								nuclear_strike_move.setY(minY);
+								nuclear_strike_move.setVehicleId(v.getId());
+								moves.push_back(nuclear_strike_move);
+								break;
+							}
+						}
+					}
+				}
+			}
+
 			{
 				CMove sel_move;
 				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
@@ -961,87 +1121,21 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				scale_move.m_wait_completion = true;
 				moves.push_back(scale_move);
 			}
+
+			if (target.first)
 			{
-				std::vector<std::vector<model::Vehicle const*>> groups;
+				std::pair<double, double> normal = { cos(current_angle), sin(current_angle) };
+				double delta_angle = atan2(normal.first * (target.second.second - 92.0 - 27.0) - normal.second * (target.second.first - 92.0 - 27.0), normal.first * (target.second.first - 92.0 - 27.0) + normal.second * (target.second.second - 92.0 - 27.0));
+				current_angle += delta_angle;
 
-				for (auto const& v : vehicles)
-				{
-					if (v.getPlayerId() == me.getId())
-						continue;
-					if (v.getDurability() == 0)
-						continue;
-					bool found = false;
-					for (int i = 0; i < (int)groups.size(); i++)
-					{
-						if (found)
-							break;
-						for (int j = 0; j < (int)groups[i].size(); j++)
-						{
-							if (v.getDistanceTo(*groups[i][j]) < 20.0)
-							{
-								groups[i].push_back(&v);
-								found = true;
-								break;
-							}
-						}
-					}
-					if (!found)
-					{
-						groups.emplace_back();
-						groups.back().push_back(&v);
-					}
-				}
-
-				int minGroup = -1;
-				double minDistance = 1024.0;
-				double minX = 1024.0;
-				double minY = 1024.0;
-
-				for (int i = 0; i < (int)groups.size(); i++)
-				{
-					if (groups[i].size() < 50)
-						continue;
-					double X = 0.0;
-					double Y = 0.0;
-					for (int j = 0; j < (int)groups[i].size(); j++)
-					{
-						X += groups[i][j]->getX();
-						Y += groups[i][j]->getY();
-					}
-					X /= (double)groups[i].size();
-					Y /= (double)groups[i].size();
-					double distance = sqrt((92.0 + 27.0 - X) * (92.0 + 27.0 - X) + (92.0 + 27.0 - Y) * (92.0 + 27.0 - Y));
-					if (distance < minDistance)
-					{
-						minDistance = distance;
-						minX = X;
-						minY = Y;
-						minGroup = i;
-					}
-				}
-
-				if (minGroup != -1)
-				{
-					std::pair<double, double> normal = { cos(current_angle), sin(current_angle) };
-					double delta_angle = atan2(normal.first * (minY - 92.0 - 27.0) - normal.second * (minX - 92.0 - 27.0), normal.first * (minX - 92.0 - 27.0) + normal.second * (minY - 92.0 - 27.0));
-					current_angle += delta_angle;
-
-					CMove sel_move;
-					sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-					sel_move.setLeft(0.0);
-					sel_move.setTop(0.0);
-					sel_move.setRight(game.getWorldWidth());
-					sel_move.setBottom(game.getWorldHeight());
-					moves.push_back(sel_move);
-					CMove rotate_move;
-					rotate_move.setAction(model::ActionType::ROTATE);
-					rotate_move.setX(92.0 + 27.0);
-					rotate_move.setY(92.0 + 27.0);
-					rotate_move.setAngle(delta_angle);
-					rotate_move.setMaxAngularSpeed(PI / 800.0);
-					rotate_move.m_wait_completion = true;
-					moves.push_back(rotate_move);
-				}
+				CMove rotate_move;
+				rotate_move.setAction(model::ActionType::ROTATE);
+				rotate_move.setX(92.0 + 27.0);
+				rotate_move.setY(92.0 + 27.0);
+				rotate_move.setAngle(delta_angle);
+				rotate_move.setMaxAngularSpeed(PI / 800.0);
+				rotate_move.m_wait_completion = true;
+				moves.push_back(rotate_move);
 			}
 		}
 	}
@@ -1064,6 +1158,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			new_move.setMaxSpeed(mv.getMaxSpeed());
 			new_move.setRight(mv.getRight());
 			new_move.setTop(mv.getTop());
+			new_move.setVehicleId(mv.getVehicleId());
 			new_move.setVehicleType(mv.getVehicleType());
 			new_move.setX(mv.getX());
 			new_move.setY(mv.getY());
