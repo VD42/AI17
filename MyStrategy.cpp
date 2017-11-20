@@ -1035,13 +1035,13 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				return 0.0;
 			};
 
-			auto target = GetNearestGroupCenter(me.getId(), vehicles);
+			auto target_group = GetNearestGroupCenter(me.getId(), vehicles);
 
 			if (me.getRemainingNuclearStrikeCooldownTicks() == 0)
 			{
 				bool STRIIIIIIIIKE = false;
 
-				if (target.first && sqrt((target.second.first - 92.0 - 27.0) * (target.second.first - 92.0 - 27.0) + (target.second.second - 92.0 - 27.0) * (target.second.second - 92.0 - 27.0)) < game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6)
+				if (target_group.first && sqrt((target_group.second.first - 92.0 - 27.0) * (target_group.second.first - 92.0 - 27.0) + (target_group.second.second - 92.0 - 27.0) * (target_group.second.second - 92.0 - 27.0)) < game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6)
 				{
 					for (auto const& v : vehicles)
 					{
@@ -1049,7 +1049,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							continue;
 						if (v.getDurability() == 0)
 							continue;
-						auto distance = v.getDistanceTo(target.second.first, target.second.second);
+						auto distance = v.getDistanceTo(target_group.second.first, target_group.second.second);
 						auto vrange = GetVisionRange(v.getType()) * GetTerrainWeatherVisionCoef(v.isAerial(), world.getTerrainByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)], world.getWeatherByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)]);
 						if (50.0 < distance && distance < 0.9 * vrange)
 						{
@@ -1065,7 +1065,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 				if (STRIIIIIIIIKE)
 				{
-					std::vector<std::pair<std::reference_wrapper<model::Vehicle const>, std::pair<int, int>>> targets;
+					std::vector<std::pair<std::reference_wrapper<model::Vehicle const>, double>> targets;
 
 					for (auto const& probable_target : vehicles)
 					{
@@ -1092,9 +1092,9 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						if (!has_source)
 							continue;
 						int friendly_kills = 0;
-						int friendly_health = 0;
+						double friendly_health = 0.0;
 						int enemy_kills = 0;
-						int enemy_health = 0;
+						double enemy_health = 0.0;
 						for (auto const& dam : vehicles)
 						{
 							if (dam.getDurability() == 0)
@@ -1105,28 +1105,32 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							auto damage = ((game.getTacticalNuclearStrikeRadius() - distance) / game.getTacticalNuclearStrikeRadius()) * game.getMaxTacticalNuclearStrikeDamage();
 							if (dam.getPlayerId() == me.getId())
 							{
-								if (dam.getDurability() < (int)damage)
+								if (dam.getDurability() <= (int)damage)
+								{
 									friendly_kills++;
-								friendly_health += std::min(dam.getDurability(), (int)damage);
+									friendly_health += 2.0 * dam.getDurability();
+								}
+								friendly_health += (double)std::min(dam.getDurability(), (int)damage);
 							}
 							else
 							{
-								if (dam.getDurability() < (int)damage)
+								if (dam.getDurability() <= (int)damage)
+								{
 									enemy_kills++;
-								enemy_health += std::min(dam.getDurability(), (int)damage);
+									enemy_health += 2.0 * dam.getDurability();
+								}
+								enemy_health += (dam.isAerial() ? 0.75 : 1.0) * (double)std::min(dam.getDurability(), (int)damage);
 							}
 						}
-						if ((double)friendly_kills > 1.2 * (double)enemy_kills)
+						if (friendly_kills > enemy_kills)
 							continue;
-						if ((double)friendly_health > 1.2 * (double)enemy_health)
+						if (friendly_health > 1.2 * enemy_health)
 							continue;
-						targets.push_back(std::make_pair(probable_target, std::make_pair(enemy_kills - friendly_kills, enemy_health - friendly_health)));
+						targets.push_back(std::make_pair(std::reference_wrapper<model::Vehicle const>(probable_target), enemy_health - friendly_health));
 					}
 
 					auto best_target = std::max_element(targets.begin(), targets.end(), [] (decltype(targets)::const_reference a, decltype(targets)::const_reference b) {
-						if (a.second.first == b.second.first)
-							return (a.second.second < b.second.second);
-						return (a.second.first < b.second.first);
+						return (a.second < b.second);
 					});
 
 					if (best_target != targets.end())
@@ -1176,10 +1180,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					moves.push_back(scale_move);
 				}
 
-				if (target.first)
+				if (target_group.first)
 				{
 					std::pair<double, double> normal = { cos(current_angle), sin(current_angle) };
-					double delta_angle = atan2(normal.first * (target.second.second - 92.0 - 27.0) - normal.second * (target.second.first - 92.0 - 27.0), normal.first * (target.second.first - 92.0 - 27.0) + normal.second * (target.second.second - 92.0 - 27.0));
+					double delta_angle = atan2(normal.first * (target_group.second.second - 92.0 - 27.0) - normal.second * (target_group.second.first - 92.0 - 27.0), normal.first * (target_group.second.first - 92.0 - 27.0) + normal.second * (target_group.second.second - 92.0 - 27.0));
 					current_angle += delta_angle;
 
 					CMove rotate_move;

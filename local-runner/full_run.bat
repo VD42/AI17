@@ -1,2 +1,2 @@
 call local-runner.bat
-..\x64\Release\cpp-cgdk.exe
+..\Release\cpp-cgdk.exe
