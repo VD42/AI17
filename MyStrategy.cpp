@@ -1184,7 +1184,9 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				{
 					std::pair<double, double> normal = { cos(current_angle), sin(current_angle) };
 					double delta_angle = atan2(normal.first * (target_group.second.second - 92.0 - 27.0) - normal.second * (target_group.second.first - 92.0 - 27.0), normal.first * (target_group.second.first - 92.0 - 27.0) + normal.second * (target_group.second.second - 92.0 - 27.0));
-					current_angle += delta_angle;
+					
+					if (abs(delta_angle) > 0.0)
+						delta_angle = (delta_angle / abs(delta_angle)) * std::min(abs(delta_angle), 30.0 * PI / 800.0);
 
 					CMove rotate_move;
 					rotate_move.setAction(model::ActionType::ROTATE);
