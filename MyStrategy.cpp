@@ -918,8 +918,15 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	if (nuclearTickIndex == -1 && nuclearWaitTicks > 0)
 		nuclearWaitTicks--;
 
+	static bool enable_rotating = false;
+	static bool rotating = false;
+	static double rotating_angle = 0.0;
+
 	if (mode == 4 && current_move == (int)moves.size() && (!moves[current_move - 1].m_wait_completion || stopped))
 	{
+		if (!enable_rotating)
+			enable_rotating = true;
+
 		if (nuclearTickIndex == -1 && nuclearWaitTicks > 0)
 		{
 			if (nuclearWaitTicks == 1)
@@ -1191,12 +1198,8 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					moves.push_back(sel_move);
 
 					std::pair<double, double> normal = { cos(current_angle), sin(current_angle) };
-					double delta_angle = atan2(normal.first * (target_group.second.second - 92.0 - 27.0) - normal.second * (target_group.second.first - 92.0 - 27.0), normal.first * (target_group.second.first - 92.0 - 27.0) + normal.second * (target_group.second.second - 92.0 - 27.0));
-					
-					if (abs(delta_angle) > 0.0)
-						delta_angle = (delta_angle / abs(delta_angle)) * std::min<double>(abs(delta_angle), (0.5 * 30.0 * PI) / 800.0);
-
-					current_angle += delta_angle;
+					std::pair<double, double> direction = { target_group.second.first - 92.0 - 27.0, target_group.second.second - 92.0 - 27.0 };
+					double delta_angle = atan2(normal.first * direction.second - normal.second * direction.first, normal.first * direction.first + normal.second * direction.second);
 
 					CMove rotate_move;
 					rotate_move.setAction(model::ActionType::ROTATE);
@@ -1207,6 +1210,25 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					moves.push_back(rotate_move);
 				}
 			}
+		}
+	}
+
+	if (rotating)
+	{
+		if (rotating_angle > 0)
+		{
+			rotating_angle -= PI / 800.0;
+			current_angle += PI / 800.0;
+		}
+		else
+		{
+			rotating_angle += PI / 800.0;
+			current_angle -= PI / 800.0;
+		}
+		if (abs(rotating_angle) < PI / 800.0)
+		{
+			rotating_angle -= rotating_angle;
+			rotating = false;
 		}
 	}
 
@@ -1234,6 +1256,19 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			new_move.setY(mv.getY());
 
 			current_move++;
+
+			if (enable_rotating)
+			{
+				if (new_move.getAction() == model::ActionType::ROTATE)
+				{
+					rotating = true;
+					rotating_angle = new_move.getAngle();
+				}
+				else if (new_move.getAction() == model::ActionType::MOVE || new_move.getAction() == model::ActionType::SCALE)
+				{
+					rotating = false;
+				}
+			}
 		}
 	}
 }
