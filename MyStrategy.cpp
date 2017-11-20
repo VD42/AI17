@@ -17,7 +17,7 @@ public:
 	CMove() : model::Move(), m_wait_completion(false) {}
 };
 
-std::pair<double, double> GetCenter(int pid, std::vector<model::Vehicle> const& vehicles, model::VehicleType type)
+std::pair<double, double> GetCenter(__int64 pid, std::vector<model::Vehicle> const& vehicles, model::VehicleType type)
 {
 	int count = 0;
 	std::pair<double, double> result;
@@ -597,7 +597,7 @@ void DoStartMove(model::Game const& game, std::vector<CMove> & moves, model::Veh
 	}
 }
 
-std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(int pid, std::vector<model::Vehicle> const& vehicles)
+std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(__int64 pid, std::vector<model::Vehicle> const& vehicles)
 {
 	std::vector<std::vector<std::reference_wrapper<model::Vehicle const>>> groups;
 
@@ -1067,13 +1067,13 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				{
 					std::vector<std::pair<std::reference_wrapper<model::Vehicle const>, std::pair<int, int>>> targets;
 
-					for (auto const& target : vehicles)
+					for (auto const& probable_target : vehicles)
 					{
-						if (target.getPlayerId() == me.getId())
+						if (probable_target.getPlayerId() == me.getId())
 							continue;
-						if (target.getDurability() == 0)
+						if (probable_target.getDurability() == 0)
 							continue;
-						if (target.getDistanceTo(92.0 + 27.0, 92.0 + 27.0) > 1000.0)
+						if (probable_target.getDistanceTo(92.0 + 27.0, 92.0 + 27.0) > 1000.0)
 							continue;
 						bool has_source = false;
 						for (auto const& source : vehicles)
@@ -1082,7 +1082,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 								continue;
 							if (source.getDurability() == 0)
 								continue;
-							auto distance = source.getDistanceTo(target);
+							auto distance = source.getDistanceTo(probable_target);
 							auto vrange = GetVisionRange(source.getType()) * GetTerrainWeatherVisionCoef(source.isAerial(), world.getTerrainByCellXY()[(int)(source.getX() / 32.0)][(int)(source.getY() / 32.0)], world.getWeatherByCellXY()[(int)(source.getX() / 32.0)][(int)(source.getY() / 32.0)]);
 							if (distance > 0.9 * vrange)
 								continue;
@@ -1097,13 +1097,13 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						int enemy_health = 0;
 						for (auto const& dam : vehicles)
 						{
-							if (target.getDurability() == 0)
+							if (dam.getDurability() == 0)
 								continue;
-							auto distance = target.getDistanceTo(dam);
+							auto distance = probable_target.getDistanceTo(dam);
 							if (distance > game.getTacticalNuclearStrikeRadius())
 								continue;
-							auto damage = (game.getTacticalNuclearStrikeRadius() - distance) / game.getTacticalNuclearStrikeRadius() * 99.0;
-							if (target.getPlayerId() == me.getId())
+							auto damage = ((game.getTacticalNuclearStrikeRadius() - distance) / game.getTacticalNuclearStrikeRadius()) * game.getMaxTacticalNuclearStrikeDamage();
+							if (dam.getPlayerId() == me.getId())
 							{
 								if (dam.getDurability() < (int)damage)
 									friendly_kills++;
@@ -1120,19 +1120,19 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							continue;
 						if ((double)friendly_health > 1.2 * (double)enemy_health)
 							continue;
-						targets.push_back(std::make_pair(target, std::make_pair(enemy_kills - friendly_kills, enemy_health - friendly_health)));
+						targets.push_back(std::make_pair(probable_target, std::make_pair(enemy_kills - friendly_kills, enemy_health - friendly_health)));
 					}
 
-					auto real_target = std::max_element(targets.begin(), targets.end(), [] (decltype(targets)::const_reference a, decltype(targets)::const_reference b) {
+					auto best_target = std::max_element(targets.begin(), targets.end(), [] (decltype(targets)::const_reference a, decltype(targets)::const_reference b) {
 						if (a.second.first == b.second.first)
 							return (a.second.second < b.second.second);
 						return (a.second.first < b.second.first);
 					});
 
-					if (real_target != targets.end())
+					if (best_target != targets.end())
 					{
-						double X = real_target->first.get().getX();
-						double Y = real_target->first.get().getY();
+						double X = best_target->first.get().getX();
+						double Y = best_target->first.get().getY();
 
 						for (auto const& v : vehicles)
 						{
