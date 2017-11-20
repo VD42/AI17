@@ -1161,8 +1161,26 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				}
 			}
 
-			if (world.getTickIndex() % 30 == 0)
+			if (world.getTickIndex() % 60 == 0)
 			{
+				CMove sel_move;
+				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+				sel_move.setLeft(0.0);
+				sel_move.setTop(0.0);
+				sel_move.setRight(game.getWorldWidth());
+				sel_move.setBottom(game.getWorldHeight());
+				moves.push_back(sel_move);
+				CMove scale_move;
+				scale_move.setAction(model::ActionType::SCALE);
+				scale_move.setX(92.0 + 27.0);
+				scale_move.setY(92.0 + 27.0);
+				scale_move.setFactor(0.1);
+				moves.push_back(scale_move);
+			}
+
+			if (world.getTickIndex() % 60 == 30)
+			{
+				if (target_group.first)
 				{
 					CMove sel_move;
 					sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
@@ -1171,17 +1189,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					sel_move.setRight(game.getWorldWidth());
 					sel_move.setBottom(game.getWorldHeight());
 					moves.push_back(sel_move);
-					CMove scale_move;
-					scale_move.setAction(model::ActionType::SCALE);
-					scale_move.setX(92.0 + 27.0);
-					scale_move.setY(92.0 + 27.0);
-					scale_move.setFactor(0.1);
-					scale_move.m_wait_completion = true;
-					moves.push_back(scale_move);
-				}
 
-				if (target_group.first)
-				{
 					std::pair<double, double> normal = { cos(current_angle), sin(current_angle) };
 					double delta_angle = atan2(normal.first * (target_group.second.second - 92.0 - 27.0) - normal.second * (target_group.second.first - 92.0 - 27.0), normal.first * (target_group.second.first - 92.0 - 27.0) + normal.second * (target_group.second.second - 92.0 - 27.0));
 					
