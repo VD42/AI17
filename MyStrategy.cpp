@@ -8,6 +8,7 @@
 #include <set>
 #include <map>
 #include <functional>
+#include <algorithm>
 
 class CMove : public model::Move
 {
@@ -998,10 +999,8 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				moves.push_back(scale_move);
 			}
 		}
-		else if (world.getTickIndex() % 60 == 0)
+		else
 		{
-			auto target = GetNearestGroupCenter(me.getId(), vehicles);
-
 			auto GetVisionRange = [&] (model::VehicleType type) {
 				switch (type)
 				{
@@ -1036,8 +1035,12 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				return 0.0;
 			};
 
+			auto target = GetNearestGroupCenter(me.getId(), vehicles);
+
 			if (me.getRemainingNuclearStrikeCooldownTicks() == 0)
 			{
+				bool STRIIIIIIIIKE = false;
+
 				if (target.first && sqrt((target.second.first - 92.0 - 27.0) * (target.second.first - 92.0 - 27.0) + (target.second.second - 92.0 - 27.0) * (target.second.second - 92.0 - 27.0)) < game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6)
 				{
 					for (auto const& v : vehicles)
@@ -1050,52 +1053,101 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						auto vrange = GetVisionRange(v.getType()) * GetTerrainWeatherVisionCoef(v.isAerial(), world.getTerrainByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)], world.getWeatherByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)]);
 						if (50.0 < distance && distance < 0.9 * vrange)
 						{
-							CMove nuclear_strike_move;
-							nuclear_strike_move.setAction(model::ActionType::TACTICAL_NUCLEAR_STRIKE);
-							nuclear_strike_move.setX(target.second.first);
-							nuclear_strike_move.setY(target.second.second);
-							nuclear_strike_move.setVehicleId(v.getId());
-							moves.push_back(nuclear_strike_move);
+							STRIIIIIIIIKE = true;
 							break;
 						}
 					}
 				}
 				else
 				{
-					double minX = 0.0;
-					double minY = 0.0;
-					double minDistance = 1024.0;
-					for (auto const& v : vehicles)
+					STRIIIIIIIIKE = true;
+				}
+
+				if (STRIIIIIIIIKE)
+				{
+					std::vector<std::pair<std::reference_wrapper<model::Vehicle const>, std::pair<int, int>>> targets;
+
+					for (auto const& target : vehicles)
 					{
-						if (v.getPlayerId() == me.getId())
+						if (target.getPlayerId() == me.getId())
 							continue;
-						if (v.getDurability() == 0)
+						if (target.getDurability() == 0)
 							continue;
-						auto distance = v.getDistanceTo(92.0 + 27.0, 92.0 + 27.0);
-						if (distance < minDistance)
+						if (target.getDistanceTo(92.0 + 27.0, 92.0 + 27.0) > 1000.0)
+							continue;
+						bool has_source = false;
+						for (auto const& source : vehicles)
 						{
-							minX = v.getX();
-							minY = v.getY();
-							minDistance = distance;
+							if (source.getPlayerId() != me.getId())
+								continue;
+							if (source.getDurability() == 0)
+								continue;
+							auto distance = source.getDistanceTo(target);
+							auto vrange = GetVisionRange(source.getType()) * GetTerrainWeatherVisionCoef(source.isAerial(), world.getTerrainByCellXY()[(int)(source.getX() / 32.0)][(int)(source.getY() / 32.0)], world.getWeatherByCellXY()[(int)(source.getX() / 32.0)][(int)(source.getY() / 32.0)]);
+							if (distance > 0.9 * vrange)
+								continue;
+							has_source = true;
+							break;
 						}
+						if (!has_source)
+							continue;
+						int friendly_kills = 0;
+						int friendly_health = 0;
+						int enemy_kills = 0;
+						int enemy_health = 0;
+						for (auto const& dam : vehicles)
+						{
+							if (target.getDurability() == 0)
+								continue;
+							auto distance = target.getDistanceTo(dam);
+							if (distance > game.getTacticalNuclearStrikeRadius())
+								continue;
+							auto damage = (game.getTacticalNuclearStrikeRadius() - distance) / game.getTacticalNuclearStrikeRadius() * 99.0;
+							if (target.getPlayerId() == me.getId())
+							{
+								if (dam.getDurability() < (int)damage)
+									friendly_kills++;
+								friendly_health += std::min(dam.getDurability(), (int)damage);
+							}
+							else
+							{
+								if (dam.getDurability() < (int)damage)
+									enemy_kills++;
+								enemy_health += std::min(dam.getDurability(), (int)damage);
+							}
+						}
+						if ((double)friendly_kills > 1.2 * (double)enemy_kills)
+							continue;
+						if ((double)friendly_health > 1.2 * (double)enemy_health)
+							continue;
+						targets.push_back(std::make_pair(target, std::make_pair(enemy_kills - friendly_kills, enemy_health - friendly_health)));
 					}
 
-					if (minDistance < 512.0)
+					auto real_target = std::max_element(targets.begin(), targets.end(), [] (decltype(targets)::const_reference a, decltype(targets)::const_reference b) {
+						if (a.second.first == b.second.first)
+							return (a.second.second < b.second.second);
+						return (a.second.first < b.second.first);
+					});
+
+					if (real_target != targets.end())
 					{
+						double X = real_target->first.get().getX();
+						double Y = real_target->first.get().getY();
+
 						for (auto const& v : vehicles)
 						{
 							if (v.getPlayerId() != me.getId())
 								continue;
 							if (v.getDurability() == 0)
 								continue;
-							auto distance = v.getDistanceTo(minX, minY);
+							auto distance = v.getDistanceTo(X, Y);
 							auto vrange = GetVisionRange(v.getType()) * GetTerrainWeatherVisionCoef(v.isAerial(), world.getTerrainByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)], world.getWeatherByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)]);
 							if (50.0 < distance && distance < 0.9 * vrange)
 							{
 								CMove nuclear_strike_move;
 								nuclear_strike_move.setAction(model::ActionType::TACTICAL_NUCLEAR_STRIKE);
-								nuclear_strike_move.setX(minX);
-								nuclear_strike_move.setY(minY);
+								nuclear_strike_move.setX(X);
+								nuclear_strike_move.setY(Y);
 								nuclear_strike_move.setVehicleId(v.getId());
 								moves.push_back(nuclear_strike_move);
 								break;
@@ -1105,36 +1157,39 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				}
 			}
 
+			if (world.getTickIndex() % 30 == 0)
 			{
-				CMove sel_move;
-				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setLeft(0.0);
-				sel_move.setTop(0.0);
-				sel_move.setRight(game.getWorldWidth());
-				sel_move.setBottom(game.getWorldHeight());
-				moves.push_back(sel_move);
-				CMove scale_move;
-				scale_move.setAction(model::ActionType::SCALE);
-				scale_move.setX(92.0 + 27.0);
-				scale_move.setY(92.0 + 27.0);
-				scale_move.setFactor(0.1);
-				scale_move.m_wait_completion = true;
-				moves.push_back(scale_move);
-			}
+				{
+					CMove sel_move;
+					sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+					sel_move.setLeft(0.0);
+					sel_move.setTop(0.0);
+					sel_move.setRight(game.getWorldWidth());
+					sel_move.setBottom(game.getWorldHeight());
+					moves.push_back(sel_move);
+					CMove scale_move;
+					scale_move.setAction(model::ActionType::SCALE);
+					scale_move.setX(92.0 + 27.0);
+					scale_move.setY(92.0 + 27.0);
+					scale_move.setFactor(0.1);
+					scale_move.m_wait_completion = true;
+					moves.push_back(scale_move);
+				}
 
-			if (target.first)
-			{
-				std::pair<double, double> normal = { cos(current_angle), sin(current_angle) };
-				double delta_angle = atan2(normal.first * (target.second.second - 92.0 - 27.0) - normal.second * (target.second.first - 92.0 - 27.0), normal.first * (target.second.first - 92.0 - 27.0) + normal.second * (target.second.second - 92.0 - 27.0));
-				current_angle += delta_angle;
+				if (target.first)
+				{
+					std::pair<double, double> normal = { cos(current_angle), sin(current_angle) };
+					double delta_angle = atan2(normal.first * (target.second.second - 92.0 - 27.0) - normal.second * (target.second.first - 92.0 - 27.0), normal.first * (target.second.first - 92.0 - 27.0) + normal.second * (target.second.second - 92.0 - 27.0));
+					current_angle += delta_angle;
 
-				CMove rotate_move;
-				rotate_move.setAction(model::ActionType::ROTATE);
-				rotate_move.setX(92.0 + 27.0);
-				rotate_move.setY(92.0 + 27.0);
-				rotate_move.setAngle(delta_angle);
-				rotate_move.setMaxAngularSpeed(PI / 800.0);
-				moves.push_back(rotate_move);
+					CMove rotate_move;
+					rotate_move.setAction(model::ActionType::ROTATE);
+					rotate_move.setX(92.0 + 27.0);
+					rotate_move.setY(92.0 + 27.0);
+					rotate_move.setAngle(delta_angle);
+					rotate_move.setMaxAngularSpeed(PI / 800.0);
+					moves.push_back(rotate_move);
+				}
 			}
 		}
 	}
