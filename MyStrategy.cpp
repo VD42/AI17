@@ -1197,17 +1197,24 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					sel_move.setBottom(game.getWorldHeight());
 					moves.push_back(sel_move);
 
-					std::pair<double, double> normal = { cos(current_angle), sin(current_angle) };
 					std::pair<double, double> direction = { target_group.second.first - 92.0 - 27.0, target_group.second.second - 92.0 - 27.0 };
-					double delta_angle = atan2(normal.first * direction.second - normal.second * direction.first, normal.first * direction.first + normal.second * direction.second);
+					double direction_angle = acos(direction.first / sqrt(direction.first * direction.first + direction.second * direction.second));
+					double delta_angle = direction_angle - current_angle;
 
-					CMove rotate_move;
-					rotate_move.setAction(model::ActionType::ROTATE);
-					rotate_move.setX(92.0 + 27.0);
-					rotate_move.setY(92.0 + 27.0);
-					rotate_move.setAngle(delta_angle);
-					rotate_move.setMaxAngularSpeed(PI / 800.0);
-					moves.push_back(rotate_move);
+					if (abs(direction.first) > 0.0 || abs(direction.second) > 0.0)
+					{
+						printf("current_angle: %f\r\n", current_angle);
+						printf("direction_angle: %f\r\n", acos(direction.first / sqrt(direction.first * direction.first + direction.second * direction.second)));
+						printf("delta_angle: %f\r\n", delta_angle);
+
+						CMove rotate_move;
+						rotate_move.setAction(model::ActionType::ROTATE);
+						rotate_move.setX(92.0 + 27.0);
+						rotate_move.setY(92.0 + 27.0);
+						rotate_move.setAngle(delta_angle);
+						rotate_move.setMaxAngularSpeed(PI / 800.0);
+						moves.push_back(rotate_move);
+					}
 				}
 			}
 		}
@@ -1227,7 +1234,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		}
 		if (abs(rotating_angle) < PI / 800.0)
 		{
-			rotating_angle -= rotating_angle;
+			current_angle -= rotating_angle;
 			rotating = false;
 		}
 	}
