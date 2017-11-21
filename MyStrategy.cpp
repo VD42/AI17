@@ -17,7 +17,7 @@ public:
 	CMove() : model::Move(), m_wait_completion(false) {}
 };
 
-std::pair<double, double> GetCenter(__int64 pid, std::vector<model::Vehicle> const& vehicles, model::VehicleType type)
+std::pair<double, double> GetCenter(long long pid, std::vector<model::Vehicle> const& vehicles, model::VehicleType type)
 {
 	int count = 0;
 	std::pair<double, double> result;
@@ -37,7 +37,7 @@ std::pair<double, double> GetCenter(__int64 pid, std::vector<model::Vehicle> con
 	}
 	if (count == 0)
 		return { 0.0, 0.0 };
-	return { sqrt(result.first / (double)count), sqrt(result.second / (double)count) };
+	return { std::sqrt(result.first / (double)count), std::sqrt(result.second / (double)count) };
 }
 
 void CheckField(std::vector<std::vector<bool>> & field, std::pair<int, int> ipos)
@@ -597,7 +597,7 @@ void DoStartMove(model::Game const& game, std::vector<CMove> & moves, model::Veh
 	}
 }
 
-std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(__int64 pid, std::vector<model::Vehicle> const& vehicles)
+std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(long long pid, std::vector<model::Vehicle> const& vehicles)
 {
 	std::vector<std::vector<std::reference_wrapper<model::Vehicle const>>> groups;
 
@@ -647,7 +647,7 @@ std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(__int64 pid, st
 		}
 		X /= (double)groups[i].size();
 		Y /= (double)groups[i].size();
-		double distance = sqrt((92.0 + 27.0 - X) * (92.0 + 27.0 - X) + (92.0 + 27.0 - Y) * (92.0 + 27.0 - Y));
+		double distance = std::sqrt((92.0 + 27.0 - X) * (92.0 + 27.0 - X) + (92.0 + 27.0 - Y) * (92.0 + 27.0 - Y));
 		if (distance < minDistance)
 		{
 			minDistance = distance;
@@ -1048,7 +1048,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			{
 				bool STRIIIIIIIIKE = false;
 
-				if (target_group.first && sqrt((target_group.second.first - 92.0 - 27.0) * (target_group.second.first - 92.0 - 27.0) + (target_group.second.second - 92.0 - 27.0) * (target_group.second.second - 92.0 - 27.0)) < game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6)
+				if (target_group.first && std::sqrt((target_group.second.first - 92.0 - 27.0) * (target_group.second.first - 92.0 - 27.0) + (target_group.second.second - 92.0 - 27.0) * (target_group.second.second - 92.0 - 27.0)) < game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6)
 				{
 					for (auto const& v : vehicles)
 					{
@@ -1199,14 +1199,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 					std::pair<double, double> direction = { target_group.second.first - 92.0 - 27.0, target_group.second.second - 92.0 - 27.0 };
 
-					if (abs(direction.first) > 0.0 || abs(direction.second) > 0.0)
+					if (std::abs(direction.first) > 0.0 || std::abs(direction.second) > 0.0)
 					{
-						double direction_angle = atan2(direction.second / sqrt(direction.first * direction.first + direction.second * direction.second), direction.first / sqrt(direction.first * direction.first + direction.second * direction.second));
+						double direction_angle = atan2(direction.second / std::sqrt(direction.first * direction.first + direction.second * direction.second), direction.first / std::sqrt(direction.first * direction.first + direction.second * direction.second));
 						double delta_angle = direction_angle - current_angle;
-
-						//printf("current_angle: %f\r\n", current_angle);
-						//printf("direction_angle: %f\r\n", direction_angle);
-						//printf("delta_angle: %f\r\n", delta_angle);
 
 						CMove rotate_move;
 						rotate_move.setAction(model::ActionType::ROTATE);
@@ -1233,7 +1229,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			rotating_angle += PI / 800.0;
 			current_angle -= PI / 800.0;
 		}
-		if (abs(rotating_angle) < PI / 800.0)
+		if (std::abs(rotating_angle) < PI / 800.0)
 		{
 			current_angle -= rotating_angle;
 			rotating = false;
