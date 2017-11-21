@@ -1198,14 +1198,15 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					moves.push_back(sel_move);
 
 					std::pair<double, double> direction = { target_group.second.first - 92.0 - 27.0, target_group.second.second - 92.0 - 27.0 };
-					double direction_angle = acos(direction.first / sqrt(direction.first * direction.first + direction.second * direction.second));
-					double delta_angle = direction_angle - current_angle;
 
 					if (abs(direction.first) > 0.0 || abs(direction.second) > 0.0)
 					{
-						printf("current_angle: %f\r\n", current_angle);
-						printf("direction_angle: %f\r\n", acos(direction.first / sqrt(direction.first * direction.first + direction.second * direction.second)));
-						printf("delta_angle: %f\r\n", delta_angle);
+						double direction_angle = atan2(direction.second / sqrt(direction.first * direction.first + direction.second * direction.second), direction.first / sqrt(direction.first * direction.first + direction.second * direction.second));
+						double delta_angle = direction_angle - current_angle;
+
+						//printf("current_angle: %f\r\n", current_angle);
+						//printf("direction_angle: %f\r\n", direction_angle);
+						//printf("delta_angle: %f\r\n", delta_angle);
 
 						CMove rotate_move;
 						rotate_move.setAction(model::ActionType::ROTATE);
