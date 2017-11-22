@@ -1126,7 +1126,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 									enemy_kills++;
 									enemy_health += 2.0 * dam.getDurability();
 								}
-								enemy_health += (dam.isAerial() ? 0.75 : 1.0) * (double)std::min(dam.getDurability(), (int)damage);
+								enemy_health += (dam.isAerial() ? 0.75 : (dam.getType() == model::VehicleType::ARRV ? 0.25 : 1.0)) * (double)std::min(dam.getDurability(), (int)damage);
 							}
 						}
 						if (friendly_kills > enemy_kills)
