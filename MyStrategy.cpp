@@ -1168,24 +1168,12 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				}
 			}
 
-			if (world.getTickIndex() % 60 == 0)
-			{
-				CMove sel_move;
-				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setLeft(0.0);
-				sel_move.setTop(0.0);
-				sel_move.setRight(game.getWorldWidth());
-				sel_move.setBottom(game.getWorldHeight());
-				moves.push_back(sel_move);
-				CMove scale_move;
-				scale_move.setAction(model::ActionType::SCALE);
-				scale_move.setX(92.0 + 27.0);
-				scale_move.setY(92.0 + 27.0);
-				scale_move.setFactor(0.1);
-				moves.push_back(scale_move);
-			}
+			static bool mode_rotate = false;
+			static int lastScaleTick = 0;
+			static int lastRotateTick = 0;
+			static int rotatePrediction = 0;
 
-			if (world.getTickIndex() % 60 == 30)
+			if (!mode_rotate && lastScaleTick + 30 <= world.getTickIndex())
 			{
 				if (target_group.first)
 				{
@@ -1204,6 +1192,16 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						double direction_angle = atan2(direction.second / std::sqrt(direction.first * direction.first + direction.second * direction.second), direction.first / std::sqrt(direction.first * direction.first + direction.second * direction.second));
 						double delta_angle = direction_angle - current_angle;
 
+						if (std::abs(delta_angle) > PI / 2.0)
+						{
+							if (current_angle > 0.0)
+								current_angle -= PI;
+							else
+								current_angle += PI;
+							
+							delta_angle = direction_angle - current_angle;
+						}
+
 						CMove rotate_move;
 						rotate_move.setAction(model::ActionType::ROTATE);
 						rotate_move.setX(92.0 + 27.0);
@@ -1211,8 +1209,32 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						rotate_move.setAngle(delta_angle);
 						rotate_move.setMaxAngularSpeed(PI / 800.0);
 						moves.push_back(rotate_move);
+
+						rotatePrediction = std::max(30, std::min(120, (int)(std::abs(delta_angle) / (PI / 800.0) + 0.5)));
+						lastRotateTick = world.getTickIndex();
+						mode_rotate = true;
 					}
 				}
+			}
+
+			if (mode_rotate && lastRotateTick + rotatePrediction <= world.getTickIndex())
+			{
+				CMove sel_move;
+				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+				sel_move.setLeft(0.0);
+				sel_move.setTop(0.0);
+				sel_move.setRight(game.getWorldWidth());
+				sel_move.setBottom(game.getWorldHeight());
+				moves.push_back(sel_move);
+				CMove scale_move;
+				scale_move.setAction(model::ActionType::SCALE);
+				scale_move.setX(92.0 + 27.0);
+				scale_move.setY(92.0 + 27.0);
+				scale_move.setFactor(0.1);
+				moves.push_back(scale_move);
+
+				lastScaleTick = world.getTickIndex();
+				mode_rotate = false;
 			}
 		}
 	}
