@@ -1115,7 +1115,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 								if (dam.getDurability() <= (int)damage)
 								{
 									friendly_kills++;
-									friendly_health += 2.0 * dam.getDurability();
+									friendly_health += 1.5 * dam.getMaxDurability();
 								}
 								friendly_health += (double)std::min(dam.getDurability(), (int)damage);
 							}
@@ -1124,9 +1124,24 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 								if (dam.getDurability() <= (int)damage)
 								{
 									enemy_kills++;
-									enemy_health += 2.0 * dam.getDurability();
+									enemy_health += 1.5 * dam.getMaxDurability();
 								}
-								enemy_health += (dam.isAerial() ? 0.75 : (dam.getType() == model::VehicleType::ARRV ? 0.25 : 1.0)) * (double)std::min(dam.getDurability(), (int)damage);
+
+								double coef = 1.0;
+								for (auto const& heal : vehicles)
+								{
+									if (heal.getPlayerId() == me.getId())
+										continue;
+									if (heal.getType() != model::VehicleType::ARRV)
+										continue;
+									if (heal.getDurability() == 0)
+										continue;
+									if (dam.getDistanceTo(heal) > game.getArrvRepairRange())
+										continue;
+									coef *= 0.25;
+								}
+
+								enemy_health += (dam.isAerial() ? 0.75 : 1.0) * coef * (double)std::min(dam.getDurability(), (int)damage);
 							}
 						}
 						if (friendly_kills > enemy_kills)
