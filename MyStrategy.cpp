@@ -1232,9 +1232,9 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 						rotatePrediction = std::max(30, std::min(120, (int)(std::abs(delta_angle) / (PI / 800.0) + 0.5)));
 						lastRotateTick = world.getTickIndex();
-						mode_rotate = true;
 					}
 				}
+				mode_rotate = true;
 			}
 
 			if (mode_rotate && lastRotateTick + rotatePrediction <= world.getTickIndex())
