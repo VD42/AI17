@@ -640,11 +640,16 @@ std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(long long pid, 
 			continue;
 		double X = 0.0;
 		double Y = 0.0;
+		int heals = 0;
 		for (int j = 0; j < (int)groups[i].size(); j++)
 		{
 			X += groups[i][j].get().getX();
 			Y += groups[i][j].get().getY();
+			if (groups[i][j].get().getType() == model::VehicleType::ARRV)
+				heals++;
 		}
+		if ((double)heals > 0.75 * (double)groups[i].size())
+			continue;
 		X /= (double)groups[i].size();
 		Y /= (double)groups[i].size();
 		double distance = std::sqrt((92.0 + 27.0 - X) * (92.0 + 27.0 - X) + (92.0 + 27.0 - Y) * (92.0 + 27.0 - Y));
