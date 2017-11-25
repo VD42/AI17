@@ -1007,9 +1007,25 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		{
 			static bool bomber_mode = false;
 			static bool bomber_mode_fly = false;
+			static long long bomber_id = -1;
 
 			if (world.getTickIndex() >= 15000 && me.getScore() == 0)
 				bomber_mode = true;
+
+			if (bomber_mode && bomber_mode_fly && me.getScore() <= world.getOpponentPlayer().getScore())
+			{
+				for (auto const& v : vehicles)
+				{
+					if (v.getId() != bomber_id)
+						continue;
+					if (v.getDurability() == 0)
+					{
+						bomber_id = -1;
+						bomber_mode_fly = false;
+					}
+					break;
+				}
+			}
 
 			if (bomber_mode && !bomber_mode_fly)
 			{
@@ -1032,7 +1048,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					}
 				}
 
-				if (nearest_distance < 5000.0)
+				if (nearest_distance < 5000.0 && me.getRemainingNuclearStrikeCooldownTicks() <= (int)(nearest_distance / (game.getFighterSpeed() * game.getRainWeatherSpeedFactor()) + 0.5))
 				{
 					nearest_distance = 10000.0;
 					model::Vehicle empty;
@@ -1078,6 +1094,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						moves.push_back(move_move);
 
 						bomber_mode_fly = true;
+						bomber_id = my_fighter.get().getId();
 					}
 				}
 			}
