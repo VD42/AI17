@@ -1008,12 +1008,110 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			static bool bomber_mode = false;
 			static bool bomber_mode_fly = false;
 			static long long bomber_id = -1;
+			static bool bomber_on_way = false;
 
 			if (world.getTickIndex() >= 10000 && me.getScore() < 20 && me.getScore() < world.getOpponentPlayer().getScore())
 				bomber_mode = true;
 
 			if (world.getTickIndex() >= 15000 && me.getScore() == 0)
 				bomber_mode = true;
+
+			if (bomber_id != -1)
+			{
+				for (auto const& v : vehicles)
+				{
+					if (v.getId() != bomber_id)
+						continue;
+					if (v.getDurability() != 0)
+					{
+						bool escaping = false;
+
+						double min_distance = 10000.0;
+						std::pair<double, double> nearest_enemy;
+						std::pair<double, double> sum = { 0.0, 0.0 };
+						int count = 0;
+						for (auto const& v2 : vehicles)
+						{
+							if (v2.getPlayerId() == me.getId())
+								continue;
+							if (v2.getDurability() == 0)
+								continue;
+							if (v2.getType() == model::VehicleType::ARRV)
+								continue;
+							double distance = v.getDistanceTo(v2);
+							if (distance < min_distance)
+							{
+								nearest_enemy = { v2.getX(), v2.getY() };
+								min_distance = distance;
+							}
+							double need_distance = ((me.getRemainingNuclearStrikeCooldownTicks() == 0 || me.getNextNuclearStrikeTickIndex() != -1) ? 60.0 : 150.0);
+							if (distance < need_distance + 0.0001)
+							{
+								std::pair<double, double> vec = { (need_distance - distance) * (v.getX() - v2.getX()) / (std::sqrt(2.0) * distance), (need_distance - distance) * (v.getY() - v2.getY()) / (std::sqrt(2.0) * distance) };
+								sum.first += vec.first;
+								sum.second += vec.second;
+								count++;
+								escaping = true;
+							}
+						}
+
+						if (min_distance < 100.0)
+						{
+							printf("bomber_on_way = false\r\n");
+							bomber_on_way = false;
+						}
+
+						if (escaping)
+						{
+							sum.first /= (double)count;
+							sum.second /= (double)count;
+
+							if (std::sqrt(sum.first * sum.first + sum.second * sum.second) > 0.5)
+							{
+								CMove sel_move;
+								sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+								sel_move.setLeft(v.getX() - 0.1);
+								sel_move.setTop(v.getY() - 0.1);
+								sel_move.setRight(v.getX() + 0.1);
+								sel_move.setBottom(v.getY() + 0.1);
+								moves.push_back(sel_move);
+
+								CMove move_move;
+								move_move.setAction(model::ActionType::MOVE);
+								move_move.setX(sum.first);
+								move_move.setY(sum.second);
+								moves.push_back(move_move);
+
+								printf("escaping: %f, %f\r\n", sum.first, sum.second);
+							}
+						}
+
+						if (!bomber_on_way && !escaping && min_distance < 5000.0 && me.getRemainingNuclearStrikeCooldownTicks() == 0 && min_distance > 64.0)
+						{
+							CMove sel_move;
+							sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+							sel_move.setLeft(v.getX() - 0.1);
+							sel_move.setTop(v.getY() - 0.1);
+							sel_move.setRight(v.getX() + 0.1);
+							sel_move.setBottom(v.getY() + 0.1);
+							moves.push_back(sel_move);
+
+							std::pair<double, double> vec = { (min_distance - 60.0) * (nearest_enemy.first - v.getX()) / (std::sqrt(2.0) * v.getDistanceTo(nearest_enemy.first, nearest_enemy.second)), (min_distance - 60.0) * (nearest_enemy.second - v.getY()) / (std::sqrt(2.0) * v.getDistanceTo(nearest_enemy.first, nearest_enemy.second)) };
+
+							CMove move_move;
+							move_move.setAction(model::ActionType::MOVE);
+							move_move.setX(vec.first);
+							move_move.setY(vec.second);
+							moves.push_back(move_move);
+
+							printf("bomber_on_way: %f, %f\r\n", vec.first, vec.second);
+
+							bomber_on_way = true;
+						}
+					}
+					break;
+				}
+			}
 
 			if (bomber_mode && bomber_mode_fly && me.getScore() <= world.getOpponentPlayer().getScore())
 			{
@@ -1025,29 +1123,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					{
 						bomber_id = -1;
 						bomber_mode_fly = false;
-					}
-					else
-					{
-						bool found = false;
-						for (auto const& v2 : vehicles)
-						{
-							if (v2.getPlayerId() == me.getId())
-								continue;
-							if (v2.getDurability() == 0)
-								continue;
-							if (v2.getType() == model::VehicleType::ARRV)
-								continue;
-							if (v.getDistanceTo(v2) < 64.0)
-							{
-								found = true;
-								break;
-							}
-						}
-						if (!found)
-						{
-							bomber_id = -1;
-							bomber_mode_fly = false;
-						}
 					}
 					break;
 				}
@@ -1074,7 +1149,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					}
 				}
 
-				if (nearest_distance < 5000.0 && me.getRemainingNuclearStrikeCooldownTicks() <= (int)(nearest_distance / (game.getFighterSpeed() * game.getRainWeatherSpeedFactor()) + 0.5))
+				if (nearest_distance < 5000.0)
 				{
 					nearest_distance = 10000.0;
 					model::Vehicle empty;
@@ -1121,6 +1196,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 						bomber_mode_fly = true;
 						bomber_id = my_fighter.get().getId();
+						bomber_on_way = true;
 					}
 				}
 			}
@@ -1256,6 +1332,8 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 									if (dam.getDistanceTo(heal) > game.getArrvRepairRange())
 										continue;
 									coef *= 0.25;
+									if (bomber_mode)
+										coef *= 0.0;
 								}
 
 								enemy_health += (dam.isAerial() ? 0.75 : 1.0) * coef * (double)std::min(dam.getDurability(), (int)damage);
