@@ -1023,6 +1023,29 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						bomber_id = -1;
 						bomber_mode_fly = false;
 					}
+					else
+					{
+						bool found = false;
+						for (auto const& v2 : vehicles)
+						{
+							if (v2.getPlayerId() == me.getId())
+								continue;
+							if (v2.getDurability() == 0)
+								continue;
+							if (v2.getType() == model::VehicleType::ARRV)
+								continue;
+							if (v.getDistanceTo(v2) < 51.0)
+							{
+								found = true;
+								break;
+							}
+						}
+						if (!found)
+						{
+							bomber_id = -1;
+							bomber_mode_fly = false;
+						}
+					}
 					break;
 				}
 			}
