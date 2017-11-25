@@ -1009,6 +1009,9 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			static bool bomber_mode_fly = false;
 			static long long bomber_id = -1;
 
+			if (world.getTickIndex() >= 10000 && me.getScore() < 20 && me.getScore() < world.getOpponentPlayer().getScore())
+				bomber_mode = true;
+
 			if (world.getTickIndex() >= 15000 && me.getScore() == 0)
 				bomber_mode = true;
 
@@ -1034,7 +1037,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 								continue;
 							if (v2.getType() == model::VehicleType::ARRV)
 								continue;
-							if (v.getDistanceTo(v2) < 51.0)
+							if (v.getDistanceTo(v2) < 64.0)
 							{
 								found = true;
 								break;
@@ -1112,8 +1115,8 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 						CMove move_move;
 						move_move.setAction(model::ActionType::MOVE);
-						move_move.setX(vec.first - vec.first * 50.0 / std::sqrt(vec.first * vec.first + vec.second + vec.second));
-						move_move.setY(vec.second - vec.second * 50.0 / std::sqrt(vec.first * vec.first + vec.second + vec.second));
+						move_move.setX(vec.first - vec.first * 60.0 / std::sqrt(2.0 * (vec.first * vec.first + vec.second + vec.second)));
+						move_move.setY(vec.second - vec.second * 60.0 / std::sqrt(2.0 * (vec.first * vec.first + vec.second + vec.second)));
 						moves.push_back(move_move);
 
 						bomber_mode_fly = true;
