@@ -887,6 +887,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			sel_move.setRight(game.getWorldWidth());
 			sel_move.setBottom(game.getWorldHeight());
 			moves.push_back(sel_move);
+			CMove assign_move;
+			assign_move.setAction(model::ActionType::ASSIGN);
+			assign_move.setGroup(1);
+			moves.push_back(assign_move);
 			CMove scale_move;
 			scale_move.setAction(model::ActionType::SCALE);
 			scale_move.setX(92.0 + 27.0);
@@ -898,10 +902,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		{
 			CMove sel_move;
 			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setLeft(0.0);
-			sel_move.setTop(0.0);
-			sel_move.setRight(game.getWorldWidth());
-			sel_move.setBottom(game.getWorldHeight());
+			sel_move.setGroup(1);
 			moves.push_back(sel_move);
 			CMove rotate_move;
 			rotate_move.setAction(model::ActionType::ROTATE);
@@ -938,10 +939,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			{
 				CMove sel_move;
 				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setLeft(0.0);
-				sel_move.setTop(0.0);
-				sel_move.setRight(game.getWorldWidth());
-				sel_move.setBottom(game.getWorldHeight());
+				sel_move.setGroup(1);
 				moves.push_back(sel_move);
 				CMove scale_move;
 				scale_move.setAction(model::ActionType::SCALE);
@@ -958,10 +956,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			{
 				CMove sel_move;
 				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setLeft(0.0);
-				sel_move.setTop(0.0);
-				sel_move.setRight(game.getWorldWidth());
-				sel_move.setBottom(game.getWorldHeight());
+				sel_move.setGroup(1);
 				moves.push_back(sel_move);
 				CMove scale_move;
 				scale_move.setAction(model::ActionType::SCALE);
@@ -998,10 +993,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 				CMove sel_move;
 				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setLeft(0.0);
-				sel_move.setTop(0.0);
-				sel_move.setRight(game.getWorldWidth());
-				sel_move.setBottom(game.getWorldHeight());
+				sel_move.setGroup(1);
 				moves.push_back(sel_move);
 				CMove scale_move;
 				scale_move.setAction(model::ActionType::SCALE);
@@ -1013,6 +1005,83 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		}
 		else
 		{
+			static bool bomber_mode = false;
+			static bool bomber_mode_fly = false;
+
+			if (world.getTickIndex() >= 15000 && me.getScore() == 0)
+				bomber_mode = true;
+
+			if (bomber_mode && !bomber_mode_fly)
+			{
+				std::pair<double, double> nearest_enemy;
+				double nearest_distance = 10000.0;
+
+				for (auto const& v : vehicles)
+				{
+					if (v.getPlayerId() == me.getId())
+						continue;
+					if (v.getDurability() == 0)
+						continue;
+					if (v.getType() == model::VehicleType::ARRV)
+						continue;
+					auto distance = v.getDistanceTo(92.0 + 27.0, 92.0 + 27.0);
+					if (distance < nearest_distance)
+					{
+						nearest_distance = distance;
+						nearest_enemy = { v.getX(), v.getY() };
+					}
+				}
+
+				if (nearest_distance < 5000.0)
+				{
+					nearest_distance = 10000.0;
+					model::Vehicle empty;
+					std::reference_wrapper<const model::Vehicle> my_fighter(empty);
+
+					for (auto const& v : vehicles)
+					{
+						if (v.getPlayerId() != me.getId())
+							continue;
+						if (v.getDurability() == 0)
+							continue;
+						if (v.getType() != model::VehicleType::FIGHTER)
+							continue;
+						auto distance = v.getDistanceTo(nearest_enemy.first, nearest_enemy.second);
+						if (distance < nearest_distance)
+						{
+							nearest_distance = distance;
+							my_fighter = v;
+						}
+					}
+
+					if (nearest_distance < 5000.0)
+					{
+						CMove sel_move;
+						sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+						sel_move.setLeft(my_fighter.get().getX() - 0.1);
+						sel_move.setTop(my_fighter.get().getY() - 0.1);
+						sel_move.setRight(my_fighter.get().getX() + 0.1);
+						sel_move.setBottom(my_fighter.get().getY() + 0.1);
+						moves.push_back(sel_move);
+
+						CMove dismiss_move;
+						dismiss_move.setAction(model::ActionType::DISMISS);
+						dismiss_move.setGroup(1);
+						moves.push_back(dismiss_move);
+
+						std::pair<double, double> vec = { nearest_enemy.first - my_fighter.get().getX(), nearest_enemy.second - my_fighter.get().getY() };
+
+						CMove move_move;
+						move_move.setAction(model::ActionType::MOVE);
+						move_move.setX(vec.first - vec.first * 50.0 / std::sqrt(vec.first * vec.first + vec.second + vec.second));
+						move_move.setY(vec.second - vec.second * 50.0 / std::sqrt(vec.first * vec.first + vec.second + vec.second));
+						moves.push_back(move_move);
+
+						bomber_mode_fly = true;
+					}
+				}
+			}
+
 			auto GetVisionRange = [&] (model::VehicleType type) {
 				switch (type)
 				{
@@ -1085,7 +1154,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							continue;
 						if (probable_target.getDurability() == 0)
 							continue;
-						if (probable_target.getDistanceTo(92.0 + 27.0, 92.0 + 27.0) > 1000.0)
+						if (probable_target.getDistanceTo(92.0 + 27.0, 92.0 + 27.0) > 1000.0 && !bomber_mode)
 							continue;
 						bool has_source = false;
 						for (auto const& source : vehicles)
@@ -1199,10 +1268,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				{
 					CMove sel_move;
 					sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-					sel_move.setLeft(0.0);
-					sel_move.setTop(0.0);
-					sel_move.setRight(game.getWorldWidth());
-					sel_move.setBottom(game.getWorldHeight());
+					sel_move.setGroup(1);
 					moves.push_back(sel_move);
 
 					std::pair<double, double> direction = { target_group.second.first - 92.0 - 27.0, target_group.second.second - 92.0 - 27.0 };
@@ -1241,10 +1307,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			{
 				CMove sel_move;
 				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setLeft(0.0);
-				sel_move.setTop(0.0);
-				sel_move.setRight(game.getWorldWidth());
-				sel_move.setBottom(game.getWorldHeight());
+				sel_move.setGroup(1);
 				moves.push_back(sel_move);
 				CMove scale_move;
 				scale_move.setAction(model::ActionType::SCALE);
