@@ -702,11 +702,11 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		bomber_last_moving_move = world.getTickIndex();
 
 	bool stopped = false;
-	if (last_moving_move + 5 < world.getTickIndex())
+	if (last_moving_move + 2 < world.getTickIndex())
 		stopped = true;
 
 	bool bomber_stopped = false;
-	if (bomber_last_moving_move + 5 < world.getTickIndex())
+	if (bomber_last_moving_move + 2 < world.getTickIndex())
 		bomber_stopped = true;
 
 	// strategy
@@ -1028,6 +1028,69 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			if (world.getTickIndex() >= 15000 && me.getScore() == 0)
 				bomber_mode = true;
 
+			if (bomber_mode)
+			{
+				for (auto const& v : vehicles)
+				{
+					if (v.getPlayerId() != me.getId())
+						continue;
+					if (v.getDurability() == 0)
+						continue;
+					if (v.getId() == bomber_id)
+						continue;
+					if (!v.getGroups().empty())
+						continue;
+					if (v.getDistanceTo(92.0 + 27.0, 92.0 + 27.0) < 100.0)
+					{
+						CMove sel_move;
+						sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+						sel_move.setLeft(v.getX() - 0.1);
+						sel_move.setTop(v.getY() - 0.1);
+						sel_move.setRight(v.getX() + 0.1);
+						sel_move.setBottom(v.getY() + 0.1);
+						moves.push_back(sel_move);
+
+						CMove assign_move;
+						assign_move.setAction(model::ActionType::ASSIGN);
+						assign_move.setGroup(1);
+						moves.push_back(assign_move);
+					}
+					break;
+				}
+			}
+
+			if (bomber_mode && bomber_mode_fly && me.getScore() <= world.getOpponentPlayer().getScore())
+			{
+				for (auto const& v : vehicles)
+				{
+					if (v.getId() != bomber_id)
+						continue;
+					if (v.getDurability() < v.getMaxDurability() / 2)
+					{
+						if (v.getDurability() > 0)
+						{
+							CMove sel_move;
+							sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+							sel_move.setLeft(v.getX() - 0.1);
+							sel_move.setTop(v.getY() - 0.1);
+							sel_move.setRight(v.getX() + 0.1);
+							sel_move.setBottom(v.getY() + 0.1);
+							moves.push_back(sel_move);
+
+							CMove move_move;
+							move_move.setAction(model::ActionType::MOVE);
+							move_move.setX(92.0 + 27.0 - v.getX());
+							move_move.setY(92.0 + 27.0 - v.getY());
+							moves.push_back(move_move);
+						}
+
+						bomber_id = -1;
+						bomber_mode_fly = false;
+					}
+					break;
+				}
+			}
+
 			if (bomber_id != -1)
 			{
 				for (auto const& v : vehicles)
@@ -1057,7 +1120,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 								min_distance = distance;
 							}
 							double need_distance = ((me.getRemainingNuclearStrikeCooldownTicks() == 0 || me.getNextNuclearStrikeTickIndex() != -1) ? 60.0 : 150.0);
-							if (distance < 30.0)
+							if (distance < 30.0 && me.getNextNuclearStrikeTickIndex() == -1)
 								bomber_stopped = true; // danger!!!
 							if (distance < need_distance + 0.0001)
 							{
@@ -1115,21 +1178,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				}
 			}
 
-			if (bomber_mode && bomber_mode_fly && me.getScore() <= world.getOpponentPlayer().getScore())
-			{
-				for (auto const& v : vehicles)
-				{
-					if (v.getId() != bomber_id)
-						continue;
-					if (v.getDurability() == 0)
-					{
-						bomber_id = -1;
-						bomber_mode_fly = false;
-					}
-					break;
-				}
-			}
-
 			if (bomber_mode && !bomber_mode_fly)
 			{
 				std::pair<double, double> nearest_enemy;
@@ -1161,7 +1209,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					{
 						if (v.getPlayerId() != me.getId())
 							continue;
-						if (v.getDurability() == 0)
+						if (v.getDurability() != v.getMaxDurability())
 							continue;
 						if (v.getType() != model::VehicleType::FIGHTER)
 							continue;
