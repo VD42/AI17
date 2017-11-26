@@ -993,6 +993,8 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					continue;
 				if (v.getDurability() == 0)
 					continue;
+				if (v.getId() == bomber_id)
+					continue;
 				if (v.getDistanceTo(nuclearScaleX, nuclearScaleY) < game.getTacticalNuclearStrikeRadius())
 				{
 					detected = true;
@@ -1065,7 +1067,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				{
 					if (v.getId() != bomber_id)
 						continue;
-					if (v.getDurability() < v.getMaxDurability() / 2)
+					if (v.getDurability() < v.getMaxDurability() / ((me.getScore() == world.getOpponentPlayer().getScore()) ? 1 : 2))
 					{
 						if (v.getDurability() > 0)
 						{
