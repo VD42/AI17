@@ -597,7 +597,7 @@ void DoStartMove(model::Game const& game, std::vector<CMove> & moves, model::Veh
 	}
 }
 
-std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(long long pid, std::vector<model::Vehicle> const& vehicles)
+std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(long long pid, std::vector<model::Vehicle> const& vehicles, std::pair<double, double> current_position)
 {
 	std::vector<std::vector<std::reference_wrapper<model::Vehicle const>>> groups;
 
@@ -652,7 +652,7 @@ std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(long long pid, 
 			continue;
 		X /= (double)groups[i].size();
 		Y /= (double)groups[i].size();
-		double squared_distance = (92.0 + 27.0 - X) * (92.0 + 27.0 - X) + (92.0 + 27.0 - Y) * (92.0 + 27.0 - Y);
+		double squared_distance = (current_position.first - X) * (current_position.first - X) + (current_position.second - Y) * (current_position.second - Y);
 		if (squared_distance < minSquaredDistance)
 		{
 			minSquaredDistance = squared_distance;
@@ -876,6 +876,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	}
 
 	static double current_angle = PI / 4.0;
+	static std::pair<double, double> current_position = { 92.0 + 27.0, 92.0 + 27.0 };
 
 	if (mode == 3 && current_move == (int)moves.size() && (!moves[current_move - 1].m_wait_completion || stopped))
 	{
@@ -889,8 +890,8 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			moves.push_back(sel_move);
 			CMove scale_move;
 			scale_move.setAction(model::ActionType::SCALE);
-			scale_move.setX(92.0 + 27.0);
-			scale_move.setY(92.0 + 27.0);
+			scale_move.setX(current_position.first);
+			scale_move.setY(current_position.second);
 			scale_move.setFactor(0.1);
 			scale_move.m_wait_completion = true;
 			moves.push_back(scale_move);
@@ -905,8 +906,8 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			moves.push_back(sel_move);
 			CMove rotate_move;
 			rotate_move.setAction(model::ActionType::ROTATE);
-			rotate_move.setX(92.0 + 27.0);
-			rotate_move.setY(92.0 + 27.0);
+			rotate_move.setX(current_position.first);
+			rotate_move.setY(current_position.second);
 			rotate_move.setAngle(current_angle);
 			rotate_move.setMaxAngularSpeed(PI / 800.0);
 			rotate_move.m_wait_completion = true;
@@ -923,14 +924,20 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	if (nuclearTickIndex == -1 && nuclearWaitTicks > 0)
 		nuclearWaitTicks--;
 
-	static bool enable_rotating = false;
-	static bool rotating = false;
-	static double rotating_angle = 0.0;
+	static bool global_enable_rotating = false;
+	static bool global_rotating = false;
+	static double global_rotating_angle = 0.0;
+
+	static bool global_enable_moving = false;
+	static bool global_moving = false;
+	static std::pair<double, double> global_moving_position = { 0.0, 0.0 };
 
 	if (mode == 4 && current_move == (int)moves.size() && (!moves[current_move - 1].m_wait_completion || stopped))
 	{
-		if (!enable_rotating)
-			enable_rotating = true;
+		if (!global_enable_rotating)
+			global_enable_rotating = true;
+		if (!global_enable_moving)
+			global_enable_moving = true;
 
 		if (nuclearTickIndex == -1 && nuclearWaitTicks > 0)
 		{
@@ -1035,13 +1042,13 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				return 0.0;
 			};
 
-			auto target_group = GetNearestGroupCenter(me.getId(), vehicles);
+			auto target_group = GetNearestGroupCenter(me.getId(), vehicles, current_position);
 
 			if (me.getRemainingNuclearStrikeCooldownTicks() == 0)
 			{
 				bool STRIIIIIIIIKE = false;
 
-				if (target_group.first && (target_group.second.first - 92.0 - 27.0) * (target_group.second.first - 92.0 - 27.0) + (target_group.second.second - 92.0 - 27.0) * (target_group.second.second - 92.0 - 27.0) < game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6 * game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6)
+				if (target_group.first && (target_group.second.first - current_position.first) * (target_group.second.first - current_position.first) + (target_group.second.second - current_position.second) * (target_group.second.second - current_position.second) < game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6 * game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6)
 				{
 					for (auto const& v : vehicles)
 					{
@@ -1073,7 +1080,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							continue;
 						if (probable_target.getDurability() == 0)
 							continue;
-						if (probable_target.getSquaredDistanceTo(92.0 + 27.0, 92.0 + 27.0) > 1000.0 * 1000.0)
+						if (probable_target.getSquaredDistanceTo(current_position.first, current_position.second) > 1000.0 * 1000.0)
 							continue;
 						bool has_source = false;
 						for (auto const& source : vehicles)
@@ -1176,12 +1183,21 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				}
 			}
 
-			static bool mode_rotate = false;
+			enum class mode_action
+			{
+				rotate,
+				move,
+				scale
+			};
+
+			static mode_action last_mode = mode_action::scale;
 			static int lastScaleTick = 0;
 			static int lastRotateTick = 0;
 			static int rotatePrediction = 0;
+			static int lastMoveTick = 0;
+			static int movePrediction = 0;
 
-			if (!mode_rotate && lastScaleTick + 30 <= world.getTickIndex())
+			if (last_mode == mode_action::scale && lastScaleTick + 30 <= world.getTickIndex())
 			{
 				if (target_group.first)
 				{
@@ -1193,7 +1209,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					sel_move.setBottom(game.getWorldHeight());
 					moves.push_back(sel_move);
 
-					std::pair<double, double> direction = { target_group.second.first - 92.0 - 27.0, target_group.second.second - 92.0 - 27.0 };
+					std::pair<double, double> direction = { target_group.second.first - current_position.first, target_group.second.second - current_position.second };
 
 					if (std::abs(direction.first) > 0.0 || std::abs(direction.second) > 0.0)
 					{
@@ -1212,8 +1228,8 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 						CMove rotate_move;
 						rotate_move.setAction(model::ActionType::ROTATE);
-						rotate_move.setX(92.0 + 27.0);
-						rotate_move.setY(92.0 + 27.0);
+						rotate_move.setX(current_position.first);
+						rotate_move.setY(current_position.second);
 						rotate_move.setAngle(delta_angle);
 						rotate_move.setMaxAngularSpeed(PI / 800.0);
 						moves.push_back(rotate_move);
@@ -1222,10 +1238,52 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						lastRotateTick = world.getTickIndex();
 					}
 				}
-				mode_rotate = true;
+				last_mode = mode_action::rotate;
 			}
 
-			if (mode_rotate && lastRotateTick + rotatePrediction <= world.getTickIndex())
+			if (last_mode == mode_action::rotate && lastRotateTick + rotatePrediction <= world.getTickIndex())
+			{
+				bool f_found = false;
+				double minSquaredDistance = 1024.0 * 1024.0;
+				double minX = 0.0;
+				double minY = 0.0;
+				for (auto const& f : world.getFacilities())
+				{
+					if (f.getOwnerPlayerId() == me.getId())
+						continue;
+					double squared_distance = (current_position.first - f.getLeft() - 32.0) * (current_position.first - f.getLeft() - 32.0) + (current_position.second - f.getTop() - 32.0) * (current_position.second - f.getTop() - 32.0);
+					if (squared_distance < minSquaredDistance)
+					{
+						f_found = true;
+						minX = f.getLeft() + 32.0;
+						minY = f.getTop() + 32.0;
+						minSquaredDistance = squared_distance;
+					}
+				}
+				if (f_found)
+				{
+					CMove sel_move;
+					sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+					sel_move.setLeft(0.0);
+					sel_move.setTop(0.0);
+					sel_move.setRight(game.getWorldWidth());
+					sel_move.setBottom(game.getWorldHeight());
+					moves.push_back(sel_move);
+
+					CMove move_move;
+					move_move.setAction(model::ActionType::MOVE);
+					move_move.setX(minX - current_position.first);
+					move_move.setY(minY - current_position.second);
+					move_move.setMaxSpeed(game.getTankSpeed() * 0.6);
+					moves.push_back(move_move);
+
+					movePrediction = std::max(30, std::min(120, (int)(std::sqrt(minSquaredDistance) / (game.getTankSpeed() * 0.6) + 0.5)));
+					lastMoveTick = world.getTickIndex();
+				}
+				last_mode = mode_action::move;
+			}
+
+			if (last_mode == mode_action::move && lastMoveTick + movePrediction <= world.getTickIndex())
 			{
 				CMove sel_move;
 				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
@@ -1236,33 +1294,59 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				moves.push_back(sel_move);
 				CMove scale_move;
 				scale_move.setAction(model::ActionType::SCALE);
-				scale_move.setX(92.0 + 27.0);
-				scale_move.setY(92.0 + 27.0);
+				scale_move.setX(current_position.first);
+				scale_move.setY(current_position.second);
 				scale_move.setFactor(0.1);
 				moves.push_back(scale_move);
 
 				lastScaleTick = world.getTickIndex();
-				mode_rotate = false;
+				last_mode = mode_action::scale;
 			}
 		}
 	}
 
-	if (rotating)
+	if (global_rotating)
 	{
-		if (rotating_angle > 0)
+		if (global_rotating_angle > 0)
 		{
-			rotating_angle -= PI / 800.0;
+			global_rotating_angle -= PI / 800.0;
 			current_angle += PI / 800.0;
 		}
 		else
 		{
-			rotating_angle += PI / 800.0;
+			global_rotating_angle += PI / 800.0;
 			current_angle -= PI / 800.0;
 		}
-		if (std::abs(rotating_angle) < PI / 800.0)
+		if (std::abs(global_rotating_angle) < PI / 800.0)
 		{
-			current_angle -= rotating_angle;
-			rotating = false;
+			current_angle += global_rotating_angle;
+			global_rotating = false;
+		}
+	}
+
+	if (global_moving)
+	{
+		double distance = std::sqrt((global_moving_position.first - current_position.first) * (global_moving_position.first - current_position.first) + (global_moving_position.second - current_position.second) * (global_moving_position.second - current_position.second));
+		if (global_moving_position.first > current_position.first)
+		{
+			current_position.first += (std::abs(global_moving_position.first - current_position.first) / distance) * game.getTankSpeed() * 0.6;
+		}
+		else
+		{
+			current_position.first -= (std::abs(global_moving_position.first - current_position.first) / distance) * game.getTankSpeed() * 0.6;
+		}
+		if (global_moving_position.second > current_position.second)
+		{
+			current_position.second += (std::abs(global_moving_position.second - current_position.second) / distance) * game.getTankSpeed() * 0.6;
+		}
+		else
+		{
+			current_position.second -= (std::abs(global_moving_position.second - current_position.second) / distance) * game.getTankSpeed() * 0.6;
+		}
+		if ((global_moving_position.first - current_position.first) * (global_moving_position.first - current_position.first) + (global_moving_position.second - current_position.second) * (global_moving_position.second - current_position.second) < game.getTankSpeed() * 0.6 * game.getTankSpeed() * 0.6)
+		{
+			current_position = global_moving_position;
+			global_moving = false;
 		}
 	}
 
@@ -1291,16 +1375,29 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 			current_move++;
 
-			if (enable_rotating)
+			if (global_enable_rotating)
 			{
 				if (new_move.getAction() == model::ActionType::ROTATE)
 				{
-					rotating = true;
-					rotating_angle = new_move.getAngle();
+					global_rotating = true;
+					global_rotating_angle = new_move.getAngle();
 				}
 				else if (new_move.getAction() == model::ActionType::MOVE || new_move.getAction() == model::ActionType::SCALE)
 				{
-					rotating = false;
+					global_rotating = false;
+				}
+			}
+
+			if (global_enable_moving)
+			{
+				if (new_move.getAction() == model::ActionType::MOVE)
+				{
+					global_moving = true;
+					global_moving_position = { current_position.first + new_move.getX(), current_position.second + new_move.getY() };
+				}
+				else if (new_move.getAction() == model::ActionType::ROTATE || new_move.getAction() == model::ActionType::SCALE)
+				{
+					global_moving = false;
 				}
 			}
 		}
