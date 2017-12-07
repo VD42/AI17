@@ -922,13 +922,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			moves.push_back(scale_move);
 		}
 		{
-			CMove sel_move;
-			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setLeft(0.0);
-			sel_move.setTop(0.0);
-			sel_move.setRight(game.getWorldWidth());
-			sel_move.setBottom(game.getWorldHeight());
-			moves.push_back(sel_move);
 			CMove rotate_move;
 			rotate_move.setAction(model::ActionType::ROTATE);
 			rotate_move.setX(current_position.first);
@@ -968,13 +961,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		{
 			if (nuclearWaitTicks == 1)
 			{
-				CMove sel_move;
-				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setLeft(0.0);
-				sel_move.setTop(0.0);
-				sel_move.setRight(game.getWorldWidth());
-				sel_move.setBottom(game.getWorldHeight());
-				moves.push_back(sel_move);
 				CMove scale_move;
 				scale_move.setAction(model::ActionType::SCALE);
 				scale_move.setX(nuclearScaleX);
@@ -988,13 +974,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		{
 			if (nuclearTickIndex <= world.getTickIndex())
 			{
-				CMove sel_move;
-				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setLeft(0.0);
-				sel_move.setTop(0.0);
-				sel_move.setRight(game.getWorldWidth());
-				sel_move.setBottom(game.getWorldHeight());
-				moves.push_back(sel_move);
 				CMove scale_move;
 				scale_move.setAction(model::ActionType::SCALE);
 				scale_move.setX(nuclearScaleX);
@@ -1028,13 +1007,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				nuclearTickIndex = world.getOpponentPlayer().getNextNuclearStrikeTickIndex();
 				nuclearWaitTicks = nuclearTickIndex - world.getTickIndex();
 
-				CMove sel_move;
-				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setLeft(0.0);
-				sel_move.setTop(0.0);
-				sel_move.setRight(game.getWorldWidth());
-				sel_move.setBottom(game.getWorldHeight());
-				moves.push_back(sel_move);
 				CMove scale_move;
 				scale_move.setAction(model::ActionType::SCALE);
 				scale_move.setX(nuclearScaleX);
@@ -1206,18 +1178,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			static int lastMoveTick = 0;
 			static int movePrediction = 0;
 
-			if (last_mode == mode_action::scale && lastScaleTick + 30 <= world.getTickIndex())
+			if (last_mode == mode_action::scale && lastScaleTick + 6 <= world.getTickIndex())
 			{
 				if (target_group.first)
 				{
-					CMove sel_move;
-					sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-					sel_move.setLeft(0.0);
-					sel_move.setTop(0.0);
-					sel_move.setRight(game.getWorldWidth());
-					sel_move.setBottom(game.getWorldHeight());
-					moves.push_back(sel_move);
-
 					std::pair<double, double> direction = { target_group.second.first - current_position.first, target_group.second.second - current_position.second };
 
 					if (std::abs(direction.first) > 0.0 || std::abs(direction.second) > 0.0)
@@ -1259,7 +1223,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						rotate_move.setMaxAngularSpeed(PI / 800.0);
 						moves.push_back(rotate_move);
 
-						rotatePrediction = std::max(30, std::min(120, (int)(std::abs(delta_angle) / (PI / 800.0) + 0.5)));
+						rotatePrediction = std::max(6, std::min(18, (int)(std::abs(delta_angle) / (PI / 800.0) + 0.5)));
 						lastRotateTick = world.getTickIndex();
 					}
 				}
@@ -1287,14 +1251,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				}
 				if (f_found)
 				{
-					CMove sel_move;
-					sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-					sel_move.setLeft(0.0);
-					sel_move.setTop(0.0);
-					sel_move.setRight(game.getWorldWidth());
-					sel_move.setBottom(game.getWorldHeight());
-					moves.push_back(sel_move);
-
 					CMove move_move;
 					move_move.setAction(model::ActionType::MOVE);
 					move_move.setX(minX - current_position.first);
@@ -1302,7 +1258,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					move_move.setMaxSpeed(game.getTankSpeed() * 0.6);
 					moves.push_back(move_move);
 
-					movePrediction = std::max(30, std::min(120, (int)(std::sqrt(minSquaredDistance) / (game.getTankSpeed() * 0.6) + 0.5)));
+					movePrediction = std::max(6, std::min(36, (int)(std::sqrt(minSquaredDistance) / (game.getTankSpeed() * 0.6) + 0.5)));
 					lastMoveTick = world.getTickIndex();
 				}
 				last_mode = mode_action::move;
@@ -1310,13 +1266,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 			if (last_mode == mode_action::move && lastMoveTick + movePrediction <= world.getTickIndex())
 			{
-				CMove sel_move;
-				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setLeft(0.0);
-				sel_move.setTop(0.0);
-				sel_move.setRight(game.getWorldWidth());
-				sel_move.setBottom(game.getWorldHeight());
-				moves.push_back(sel_move);
 				CMove scale_move;
 				scale_move.setAction(model::ActionType::SCALE);
 				scale_move.setX(current_position.first);
