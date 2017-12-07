@@ -1307,46 +1307,52 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 	if (global_rotating)
 	{
-		if (global_rotating_angle > 0)
-		{
-			global_rotating_angle -= PI / 800.0;
-			current_angle += PI / 800.0;
-		}
-		else
-		{
-			global_rotating_angle += PI / 800.0;
-			current_angle -= PI / 800.0;
-		}
 		if (std::abs(global_rotating_angle) < PI / 800.0)
 		{
 			current_angle += global_rotating_angle;
 			global_rotating = false;
 		}
+		else
+		{
+			if (global_rotating_angle > 0)
+			{
+				global_rotating_angle -= PI / 800.0;
+				current_angle += PI / 800.0;
+			}
+			else
+			{
+				global_rotating_angle += PI / 800.0;
+				current_angle -= PI / 800.0;
+			}
+		}
 	}
 
 	if (global_moving)
 	{
-		double distance = std::sqrt((global_moving_position.first - current_position.first) * (global_moving_position.first - current_position.first) + (global_moving_position.second - current_position.second) * (global_moving_position.second - current_position.second));
-		if (global_moving_position.first > current_position.first)
-		{
-			current_position.first += (std::abs(global_moving_position.first - current_position.first) / distance) * game.getTankSpeed() * 0.6;
-		}
-		else
-		{
-			current_position.first -= (std::abs(global_moving_position.first - current_position.first) / distance) * game.getTankSpeed() * 0.6;
-		}
-		if (global_moving_position.second > current_position.second)
-		{
-			current_position.second += (std::abs(global_moving_position.second - current_position.second) / distance) * game.getTankSpeed() * 0.6;
-		}
-		else
-		{
-			current_position.second -= (std::abs(global_moving_position.second - current_position.second) / distance) * game.getTankSpeed() * 0.6;
-		}
 		if ((global_moving_position.first - current_position.first) * (global_moving_position.first - current_position.first) + (global_moving_position.second - current_position.second) * (global_moving_position.second - current_position.second) < game.getTankSpeed() * 0.6 * game.getTankSpeed() * 0.6)
 		{
 			current_position = global_moving_position;
 			global_moving = false;
+		}
+		else
+		{
+			double distance = std::sqrt((global_moving_position.first - current_position.first) * (global_moving_position.first - current_position.first) + (global_moving_position.second - current_position.second) * (global_moving_position.second - current_position.second));
+			if (global_moving_position.first > current_position.first)
+			{
+				current_position.first += (std::abs(global_moving_position.first - current_position.first) / distance) * game.getTankSpeed() * 0.6;
+			}
+			else
+			{
+				current_position.first -= (std::abs(global_moving_position.first - current_position.first) / distance) * game.getTankSpeed() * 0.6;
+			}
+			if (global_moving_position.second > current_position.second)
+			{
+				current_position.second += (std::abs(global_moving_position.second - current_position.second) / distance) * game.getTankSpeed() * 0.6;
+			}
+			else
+			{
+				current_position.second -= (std::abs(global_moving_position.second - current_position.second) / distance) * game.getTankSpeed() * 0.6;
+			}
 		}
 	}
 
