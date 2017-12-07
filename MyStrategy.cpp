@@ -665,6 +665,31 @@ std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(long long pid, 
 	return std::make_pair(minGroup != -1, std::make_pair(minX, minY));
 }
 
+__forceinline double GetTerrainWeatherVisionCoef(model::Game const& game, model::World const& world, model::Vehicle const& v)
+{
+	int X = (int)(v.getX() / 32.0);
+	int Y = (int)(v.getY() / 32.0);
+	if (!v.isAerial())
+	{
+		switch (world.getTerrainByCellXY()[X][Y])
+		{
+		case model::TerrainType::FOREST: return game.getForestTerrainVisionFactor();
+		case model::TerrainType::PLAIN: return game.getPlainTerrainVisionFactor();
+		case model::TerrainType::SWAMP: return game.getSwampTerrainVisionFactor();
+		}
+	}
+	else
+	{
+		switch (world.getWeatherByCellXY()[X][Y])
+		{
+		case model::WeatherType::CLEAR: return game.getClearWeatherVisionFactor();
+		case model::WeatherType::CLOUD: return game.getCloudWeatherVisionFactor();
+		case model::WeatherType::RAIN: return game.getRainWeatherVisionFactor();
+		}
+	}
+	return 0.0;
+};
+
 void MyStrategy::move(model::Player const& me, model::World const& world, model::Game const& game, model::Move & new_move)
 {
 	static std::vector<model::Vehicle> vehicles;
@@ -1020,28 +1045,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		}
 		else
 		{
-			auto GetTerrainWeatherVisionCoef = [&] (bool isAerial, model::TerrainType type1, model::WeatherType type2) {
-				if (!isAerial)
-				{
-					switch (type1)
-					{
-					case model::TerrainType::FOREST: return game.getForestTerrainVisionFactor();
-					case model::TerrainType::PLAIN: return game.getPlainTerrainVisionFactor();
-					case model::TerrainType::SWAMP: return game.getSwampTerrainVisionFactor();
-					}
-				}
-				else
-				{
-					switch (type2)
-					{
-					case model::WeatherType::CLEAR: return game.getClearWeatherVisionFactor();
-					case model::WeatherType::CLOUD: return game.getCloudWeatherVisionFactor();
-					case model::WeatherType::RAIN: return game.getRainWeatherVisionFactor();
-					}
-				}
-				return 0.0;
-			};
-
 			auto target_group = GetNearestGroupCenter(me.getId(), vehicles, current_position);
 
 			if (me.getRemainingNuclearStrikeCooldownTicks() == 0)
@@ -1057,8 +1060,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						if (v.getDurability() == 0)
 							continue;
 						auto squared_distance = v.getSquaredDistanceTo(target_group.second.first, target_group.second.second);
-						auto vrange = v.getVisionRange() * GetTerrainWeatherVisionCoef(v.isAerial(), world.getTerrainByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)], world.getWeatherByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)]);
-						if (50.0 * 50.0 < squared_distance && squared_distance < 0.9 * vrange * 0.9 * vrange)
+						if (squared_distance > 120.0 * 120.0)
+							continue;
+						auto vrange = 0.9 * v.getVisionRange() * GetTerrainWeatherVisionCoef(game, world, v);
+						if (50.0 * 50.0 < squared_distance && squared_distance < vrange * vrange)
 						{
 							STRIIIIIIIIKE = true;
 							break;
@@ -1080,7 +1085,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							continue;
 						if (probable_target.getDurability() == 0)
 							continue;
-						if (probable_target.getSquaredDistanceTo(current_position.first, current_position.second) > 1000.0 * 1000.0)
+						if (probable_target.getSquaredDistanceTo(current_position.first, current_position.second) > 512.0 * 512.0)
 							continue;
 						bool has_source = false;
 						for (auto const& source : vehicles)
@@ -1090,8 +1095,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							if (source.getDurability() == 0)
 								continue;
 							auto squared_distance = source.getSquaredDistanceTo(probable_target);
-							auto vrange = source.getVisionRange() * GetTerrainWeatherVisionCoef(source.isAerial(), world.getTerrainByCellXY()[(int)(source.getX() / 32.0)][(int)(source.getY() / 32.0)], world.getWeatherByCellXY()[(int)(source.getX() / 32.0)][(int)(source.getY() / 32.0)]);
-							if (squared_distance > 0.9 * vrange * 0.9 * vrange)
+							if (squared_distance > 120.0 * 120.0)
+								continue;
+							auto vrange = 0.9 * source.getVisionRange() * GetTerrainWeatherVisionCoef(game, world, source);
+							if (squared_distance > vrange * vrange)
 								continue;
 							has_source = true;
 							break;
@@ -1167,8 +1174,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							if (v.getDurability() == 0)
 								continue;
 							auto squared_distance = v.getSquaredDistanceTo(X, Y);
-							auto vrange = v.getVisionRange() * GetTerrainWeatherVisionCoef(v.isAerial(), world.getTerrainByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)], world.getWeatherByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)]);
-							if (50.0 * 50.0 < squared_distance && squared_distance < 0.9 * vrange * 0.9 * vrange)
+							if (squared_distance > 120.0 * 120.0)
+								continue;
+							auto vrange = 0.9 * v.getVisionRange() * GetTerrainWeatherVisionCoef(game, world, v);
+							if (50.0 * 50.0 < squared_distance && squared_distance < vrange * vrange)
 							{
 								CMove nuclear_strike_move;
 								nuclear_strike_move.setAction(model::ActionType::TACTICAL_NUCLEAR_STRIKE);
