@@ -31,13 +31,13 @@ std::pair<double, double> GetCenter(long long pid, std::vector<model::Vehicle> c
 		if (v.getType() == type)
 		{
 			count++;
-			result.first += v.getX() * v.getX();
-			result.second += v.getY() * v.getY();
+			result.first += v.getX();
+			result.second += v.getY();
 		}
 	}
 	if (count == 0)
 		return { 0.0, 0.0 };
-	return { std::sqrt(result.first / (double)count), std::sqrt(result.second / (double)count) };
+	return { result.first / (double)count, result.second / (double)count };
 }
 
 void CheckField(std::vector<std::vector<bool>> & field, std::pair<int, int> ipos)
@@ -614,7 +614,7 @@ std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(long long pid, 
 				break;
 			for (int j = 0; j < (int)groups[i].size(); j++)
 			{
-				if (v.getDistanceTo(groups[i][j]) < 20.0)
+				if (v.getSquaredDistanceTo(groups[i][j]) < 20.0 * 20.0)
 				{
 					groups[i].push_back(v);
 					found = true;
@@ -630,7 +630,7 @@ std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(long long pid, 
 	}
 
 	int minGroup = -1;
-	double minDistance = 1024.0;
+	double minSquaredDistance = 1024.0 * 1024.0;
 	double minX = 1024.0;
 	double minY = 1024.0;
 
@@ -652,10 +652,10 @@ std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(long long pid, 
 			continue;
 		X /= (double)groups[i].size();
 		Y /= (double)groups[i].size();
-		double distance = std::sqrt((92.0 + 27.0 - X) * (92.0 + 27.0 - X) + (92.0 + 27.0 - Y) * (92.0 + 27.0 - Y));
-		if (distance < minDistance)
+		double squared_distance = (92.0 + 27.0 - X) * (92.0 + 27.0 - X) + (92.0 + 27.0 - Y) * (92.0 + 27.0 - Y);
+		if (squared_distance < minSquaredDistance)
 		{
-			minDistance = distance;
+			minSquaredDistance = squared_distance;
 			minX = X;
 			minY = Y;
 			minGroup = i;
@@ -671,8 +671,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	static std::vector<CMove> moves = { CMove() };
 	static int current_move = 1;
 	static int last_moving_move = 0;
-	static int bomber_last_moving_move = 0;
-	static long long bomber_id = -1;
 
 	// update vehicles list
 
@@ -680,34 +678,22 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		vehicles.push_back(v);
 
 	bool moving = false;
-	bool bomber_moving = false;
 
 	for (auto const& u : world.getVehicleUpdates())
 		for (auto & v : vehicles)
-		{
 			if (u.getId() == v.getId())
 			{
 				if (!moving && v.getPlayerId() == me.getId() && u.getDurability() != 0 && (u.getX() != v.getX() || u.getY() != v.getY()))
 					moving = true;
-				if (!bomber_moving && v.getId() == bomber_id && u.getDurability() != 0 && (u.getX() != v.getX() || u.getY() != v.getY()))
-					bomber_moving = true;
 				v = model::Vehicle(v, u);
 			}
-		}
 
 	if (moving)
 		last_moving_move = world.getTickIndex();
 
-	if (bomber_moving)
-		bomber_last_moving_move = world.getTickIndex();
-
 	bool stopped = false;
 	if (last_moving_move + 2 < world.getTickIndex())
 		stopped = true;
-
-	bool bomber_stopped = false;
-	if (bomber_last_moving_move + 2 < world.getTickIndex())
-		bomber_stopped = true;
 
 	// strategy
 
@@ -901,10 +887,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			sel_move.setRight(game.getWorldWidth());
 			sel_move.setBottom(game.getWorldHeight());
 			moves.push_back(sel_move);
-			CMove assign_move;
-			assign_move.setAction(model::ActionType::ASSIGN);
-			assign_move.setGroup(1);
-			moves.push_back(assign_move);
 			CMove scale_move;
 			scale_move.setAction(model::ActionType::SCALE);
 			scale_move.setX(92.0 + 27.0);
@@ -916,7 +898,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		{
 			CMove sel_move;
 			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setGroup(1);
+			sel_move.setLeft(0.0);
+			sel_move.setTop(0.0);
+			sel_move.setRight(game.getWorldWidth());
+			sel_move.setBottom(game.getWorldHeight());
 			moves.push_back(sel_move);
 			CMove rotate_move;
 			rotate_move.setAction(model::ActionType::ROTATE);
@@ -953,7 +938,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			{
 				CMove sel_move;
 				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setGroup(1);
+				sel_move.setLeft(0.0);
+				sel_move.setTop(0.0);
+				sel_move.setRight(game.getWorldWidth());
+				sel_move.setBottom(game.getWorldHeight());
 				moves.push_back(sel_move);
 				CMove scale_move;
 				scale_move.setAction(model::ActionType::SCALE);
@@ -970,7 +958,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			{
 				CMove sel_move;
 				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setGroup(1);
+				sel_move.setLeft(0.0);
+				sel_move.setTop(0.0);
+				sel_move.setRight(game.getWorldWidth());
+				sel_move.setBottom(game.getWorldHeight());
 				moves.push_back(sel_move);
 				CMove scale_move;
 				scale_move.setAction(model::ActionType::SCALE);
@@ -993,9 +984,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					continue;
 				if (v.getDurability() == 0)
 					continue;
-				if (v.getId() == bomber_id)
-					continue;
-				if (v.getDistanceTo(nuclearScaleX, nuclearScaleY) < game.getTacticalNuclearStrikeRadius())
+				if (v.getSquaredDistanceTo(nuclearScaleX, nuclearScaleY) < game.getTacticalNuclearStrikeRadius() * game.getTacticalNuclearStrikeRadius())
 				{
 					detected = true;
 					break;
@@ -1009,7 +998,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 				CMove sel_move;
 				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setGroup(1);
+				sel_move.setLeft(0.0);
+				sel_move.setTop(0.0);
+				sel_move.setRight(game.getWorldWidth());
+				sel_move.setBottom(game.getWorldHeight());
 				moves.push_back(sel_move);
 				CMove scale_move;
 				scale_move.setAction(model::ActionType::SCALE);
@@ -1021,249 +1013,6 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		}
 		else
 		{
-			static bool bomber_mode = false;
-			static bool bomber_mode_fly = false;
-
-			if (world.getTickIndex() >= 10000 && me.getScore() < 20 && me.getScore() < world.getOpponentPlayer().getScore())
-				bomber_mode = true;
-
-			if (world.getTickIndex() >= 15000 && me.getScore() == 0)
-				bomber_mode = true;
-
-			if (bomber_mode)
-			{
-				for (auto const& v : vehicles)
-				{
-					if (v.getPlayerId() != me.getId())
-						continue;
-					if (v.getDurability() == 0)
-						continue;
-					if (v.getId() == bomber_id)
-						continue;
-					if (!v.getGroups().empty())
-						continue;
-					if (v.getDistanceTo(92.0 + 27.0, 92.0 + 27.0) < 100.0)
-					{
-						CMove sel_move;
-						sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-						sel_move.setLeft(v.getX() - 0.1);
-						sel_move.setTop(v.getY() - 0.1);
-						sel_move.setRight(v.getX() + 0.1);
-						sel_move.setBottom(v.getY() + 0.1);
-						moves.push_back(sel_move);
-
-						CMove assign_move;
-						assign_move.setAction(model::ActionType::ASSIGN);
-						assign_move.setGroup(1);
-						moves.push_back(assign_move);
-					}
-					break;
-				}
-			}
-
-			if (bomber_mode && bomber_mode_fly && me.getScore() <= world.getOpponentPlayer().getScore())
-			{
-				for (auto const& v : vehicles)
-				{
-					if (v.getId() != bomber_id)
-						continue;
-					if (v.getDurability() < v.getMaxDurability() / ((me.getScore() == world.getOpponentPlayer().getScore()) ? 1 : 2))
-					{
-						if (v.getDurability() > 0)
-						{
-							CMove sel_move;
-							sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-							sel_move.setLeft(v.getX() - 0.1);
-							sel_move.setTop(v.getY() - 0.1);
-							sel_move.setRight(v.getX() + 0.1);
-							sel_move.setBottom(v.getY() + 0.1);
-							moves.push_back(sel_move);
-
-							CMove move_move;
-							move_move.setAction(model::ActionType::MOVE);
-							move_move.setX(92.0 + 27.0 - v.getX());
-							move_move.setY(92.0 + 27.0 - v.getY());
-							moves.push_back(move_move);
-						}
-
-						bomber_id = -1;
-						bomber_mode_fly = false;
-					}
-					break;
-				}
-			}
-
-			if (bomber_id != -1)
-			{
-				for (auto const& v : vehicles)
-				{
-					if (v.getId() != bomber_id)
-						continue;
-					if (v.getDurability() != 0)
-					{
-						bool escaping = false;
-
-						double min_distance = 10000.0;
-						std::pair<double, double> nearest_enemy;
-						std::pair<double, double> sum = { 0.0, 0.0 };
-						int count = 0;
-						for (auto const& v2 : vehicles)
-						{
-							if (v2.getPlayerId() == me.getId())
-								continue;
-							if (v2.getDurability() == 0)
-								continue;
-							if (v2.getType() == model::VehicleType::ARRV)
-								continue;
-							double distance = v.getDistanceTo(v2);
-							if (distance < min_distance)
-							{
-								nearest_enemy = { v2.getX(), v2.getY() };
-								min_distance = distance;
-							}
-							double need_distance = ((me.getRemainingNuclearStrikeCooldownTicks() == 0 || me.getNextNuclearStrikeTickIndex() != -1) ? 60.0 : 150.0);
-							if (distance < 30.0 && me.getNextNuclearStrikeTickIndex() == -1)
-								bomber_stopped = true; // danger!!!
-							if (distance < need_distance + 0.0001)
-							{
-								std::pair<double, double> vec = { (need_distance - distance) * (v.getX() - v2.getX()) / (std::sqrt(2.0) * distance), (need_distance - distance) * (v.getY() - v2.getY()) / (std::sqrt(2.0) * distance) };
-								sum.first += vec.first;
-								sum.second += vec.second;
-								count++;
-								escaping = true;
-							}
-						}
-
-						if (escaping)
-						{
-							sum.first /= (double)count;
-							sum.second /= (double)count;
-
-							if (bomber_stopped && std::sqrt(sum.first * sum.first + sum.second * sum.second) > 9.9)
-							{
-								CMove sel_move;
-								sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-								sel_move.setLeft(v.getX() - 0.1);
-								sel_move.setTop(v.getY() - 0.1);
-								sel_move.setRight(v.getX() + 0.1);
-								sel_move.setBottom(v.getY() + 0.1);
-								moves.push_back(sel_move);
-
-								CMove move_move;
-								move_move.setAction(model::ActionType::MOVE);
-								move_move.setX(sum.first);
-								move_move.setY(sum.second);
-								moves.push_back(move_move);
-							}
-						}
-
-						if (bomber_stopped && min_distance < 5000.0 && me.getRemainingNuclearStrikeCooldownTicks() == 0 && min_distance > 64.0)
-						{
-							CMove sel_move;
-							sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-							sel_move.setLeft(v.getX() - 0.1);
-							sel_move.setTop(v.getY() - 0.1);
-							sel_move.setRight(v.getX() + 0.1);
-							sel_move.setBottom(v.getY() + 0.1);
-							moves.push_back(sel_move);
-
-							std::pair<double, double> vec = { (min_distance - 60.0) * (nearest_enemy.first - v.getX()) / (std::sqrt(2.0) * v.getDistanceTo(nearest_enemy.first, nearest_enemy.second)), (min_distance - 60.0) * (nearest_enemy.second - v.getY()) / (std::sqrt(2.0) * v.getDistanceTo(nearest_enemy.first, nearest_enemy.second)) };
-
-							CMove move_move;
-							move_move.setAction(model::ActionType::MOVE);
-							move_move.setX(vec.first);
-							move_move.setY(vec.second);
-							moves.push_back(move_move);
-						}
-					}
-					break;
-				}
-			}
-
-			if (bomber_mode && !bomber_mode_fly)
-			{
-				std::pair<double, double> nearest_enemy;
-				double nearest_distance = 10000.0;
-
-				for (auto const& v : vehicles)
-				{
-					if (v.getPlayerId() == me.getId())
-						continue;
-					if (v.getDurability() == 0)
-						continue;
-					if (v.getType() == model::VehicleType::ARRV)
-						continue;
-					auto distance = v.getDistanceTo(92.0 + 27.0, 92.0 + 27.0);
-					if (distance < nearest_distance)
-					{
-						nearest_distance = distance;
-						nearest_enemy = { v.getX(), v.getY() };
-					}
-				}
-
-				if (nearest_distance < 5000.0)
-				{
-					nearest_distance = 10000.0;
-					model::Vehicle empty;
-					std::reference_wrapper<const model::Vehicle> my_fighter(empty);
-
-					for (auto const& v : vehicles)
-					{
-						if (v.getPlayerId() != me.getId())
-							continue;
-						if (v.getDurability() != v.getMaxDurability())
-							continue;
-						if (v.getType() != model::VehicleType::FIGHTER)
-							continue;
-						auto distance = v.getDistanceTo(nearest_enemy.first, nearest_enemy.second);
-						if (distance < nearest_distance)
-						{
-							nearest_distance = distance;
-							my_fighter = v;
-						}
-					}
-
-					if (nearest_distance < 5000.0)
-					{
-						CMove sel_move;
-						sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-						sel_move.setLeft(my_fighter.get().getX() - 0.1);
-						sel_move.setTop(my_fighter.get().getY() - 0.1);
-						sel_move.setRight(my_fighter.get().getX() + 0.1);
-						sel_move.setBottom(my_fighter.get().getY() + 0.1);
-						moves.push_back(sel_move);
-
-						CMove dismiss_move;
-						dismiss_move.setAction(model::ActionType::DISMISS);
-						dismiss_move.setGroup(1);
-						moves.push_back(dismiss_move);
-
-						std::pair<double, double> vec = { nearest_enemy.first - my_fighter.get().getX(), nearest_enemy.second - my_fighter.get().getY() };
-
-						CMove move_move;
-						move_move.setAction(model::ActionType::MOVE);
-						move_move.setX(vec.first - vec.first * 60.0 / std::sqrt(2.0 * (vec.first * vec.first + vec.second + vec.second)));
-						move_move.setY(vec.second - vec.second * 60.0 / std::sqrt(2.0 * (vec.first * vec.first + vec.second + vec.second)));
-						moves.push_back(move_move);
-
-						bomber_mode_fly = true;
-						bomber_id = my_fighter.get().getId();
-					}
-				}
-			}
-
-			auto GetVisionRange = [&] (model::VehicleType type) {
-				switch (type)
-				{
-				case model::VehicleType::ARRV: return game.getArrvVisionRange();
-				case model::VehicleType::FIGHTER: return game.getFighterVisionRange();
-				case model::VehicleType::HELICOPTER: return game.getHelicopterVisionRange();
-				case model::VehicleType::IFV: return game.getIfvVisionRange();
-				case model::VehicleType::TANK: return game.getTankVisionRange();
-				}
-				return 0.0;
-			};
-
 			auto GetTerrainWeatherVisionCoef = [&] (bool isAerial, model::TerrainType type1, model::WeatherType type2) {
 				if (!isAerial)
 				{
@@ -1292,7 +1041,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			{
 				bool STRIIIIIIIIKE = false;
 
-				if (target_group.first && std::sqrt((target_group.second.first - 92.0 - 27.0) * (target_group.second.first - 92.0 - 27.0) + (target_group.second.second - 92.0 - 27.0) * (target_group.second.second - 92.0 - 27.0)) < game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6)
+				if (target_group.first && (target_group.second.first - 92.0 - 27.0) * (target_group.second.first - 92.0 - 27.0) + (target_group.second.second - 92.0 - 27.0) * (target_group.second.second - 92.0 - 27.0) < game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6 * game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6)
 				{
 					for (auto const& v : vehicles)
 					{
@@ -1300,9 +1049,9 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							continue;
 						if (v.getDurability() == 0)
 							continue;
-						auto distance = v.getDistanceTo(target_group.second.first, target_group.second.second);
-						auto vrange = GetVisionRange(v.getType()) * GetTerrainWeatherVisionCoef(v.isAerial(), world.getTerrainByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)], world.getWeatherByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)]);
-						if (50.0 < distance && distance < 0.9 * vrange)
+						auto squared_distance = v.getSquaredDistanceTo(target_group.second.first, target_group.second.second);
+						auto vrange = v.getVisionRange() * GetTerrainWeatherVisionCoef(v.isAerial(), world.getTerrainByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)], world.getWeatherByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)]);
+						if (50.0 * 50.0 < squared_distance && squared_distance < 0.9 * vrange * 0.9 * vrange)
 						{
 							STRIIIIIIIIKE = true;
 							break;
@@ -1324,7 +1073,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							continue;
 						if (probable_target.getDurability() == 0)
 							continue;
-						if (probable_target.getDistanceTo(92.0 + 27.0, 92.0 + 27.0) > 1000.0 && !bomber_mode)
+						if (probable_target.getSquaredDistanceTo(92.0 + 27.0, 92.0 + 27.0) > 1000.0 * 1000.0)
 							continue;
 						bool has_source = false;
 						for (auto const& source : vehicles)
@@ -1333,9 +1082,9 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 								continue;
 							if (source.getDurability() == 0)
 								continue;
-							auto distance = source.getDistanceTo(probable_target);
-							auto vrange = GetVisionRange(source.getType()) * GetTerrainWeatherVisionCoef(source.isAerial(), world.getTerrainByCellXY()[(int)(source.getX() / 32.0)][(int)(source.getY() / 32.0)], world.getWeatherByCellXY()[(int)(source.getX() / 32.0)][(int)(source.getY() / 32.0)]);
-							if (distance > 0.9 * vrange)
+							auto squared_distance = source.getSquaredDistanceTo(probable_target);
+							auto vrange = source.getVisionRange() * GetTerrainWeatherVisionCoef(source.isAerial(), world.getTerrainByCellXY()[(int)(source.getX() / 32.0)][(int)(source.getY() / 32.0)], world.getWeatherByCellXY()[(int)(source.getX() / 32.0)][(int)(source.getY() / 32.0)]);
+							if (squared_distance > 0.9 * vrange * 0.9 * vrange)
 								continue;
 							has_source = true;
 							break;
@@ -1350,10 +1099,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						{
 							if (dam.getDurability() == 0)
 								continue;
-							auto distance = probable_target.getDistanceTo(dam);
-							if (distance > game.getTacticalNuclearStrikeRadius())
+							auto squared_distance = probable_target.getSquaredDistanceTo(dam);
+							if (squared_distance > game.getTacticalNuclearStrikeRadius() * game.getTacticalNuclearStrikeRadius())
 								continue;
-							auto damage = ((game.getTacticalNuclearStrikeRadius() - distance) / game.getTacticalNuclearStrikeRadius()) * game.getMaxTacticalNuclearStrikeDamage();
+							auto damage = ((game.getTacticalNuclearStrikeRadius() - probable_target.getDistanceTo(dam)) / game.getTacticalNuclearStrikeRadius()) * game.getMaxTacticalNuclearStrikeDamage();
 							if (dam.getPlayerId() == me.getId())
 							{
 								if (dam.getDurability() <= (int)damage)
@@ -1380,7 +1129,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 										continue;
 									if (heal.getDurability() == 0)
 										continue;
-									if (dam.getDistanceTo(heal) > game.getArrvRepairRange())
+									if (dam.getSquaredDistanceTo(heal) > game.getArrvRepairRange() * game.getArrvRepairRange())
 										continue;
 									coef *= 0.25;
 								}
@@ -1410,9 +1159,9 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 								continue;
 							if (v.getDurability() == 0)
 								continue;
-							auto distance = v.getDistanceTo(X, Y);
-							auto vrange = GetVisionRange(v.getType()) * GetTerrainWeatherVisionCoef(v.isAerial(), world.getTerrainByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)], world.getWeatherByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)]);
-							if (50.0 < distance && distance < 0.9 * vrange && (!bomber_mode || v.getId() != bomber_id || bomber_stopped))
+							auto squared_distance = v.getSquaredDistanceTo(X, Y);
+							auto vrange = v.getVisionRange() * GetTerrainWeatherVisionCoef(v.isAerial(), world.getTerrainByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)], world.getWeatherByCellXY()[(int)(v.getX() / 32.0)][(int)(v.getY() / 32.0)]);
+							if (50.0 * 50.0 < squared_distance && squared_distance < 0.9 * vrange * 0.9 * vrange)
 							{
 								CMove nuclear_strike_move;
 								nuclear_strike_move.setAction(model::ActionType::TACTICAL_NUCLEAR_STRIKE);
@@ -1438,7 +1187,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				{
 					CMove sel_move;
 					sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-					sel_move.setGroup(1);
+					sel_move.setLeft(0.0);
+					sel_move.setTop(0.0);
+					sel_move.setRight(game.getWorldWidth());
+					sel_move.setBottom(game.getWorldHeight());
 					moves.push_back(sel_move);
 
 					std::pair<double, double> direction = { target_group.second.first - 92.0 - 27.0, target_group.second.second - 92.0 - 27.0 };
@@ -1477,7 +1229,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			{
 				CMove sel_move;
 				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-				sel_move.setGroup(1);
+				sel_move.setLeft(0.0);
+				sel_move.setTop(0.0);
+				sel_move.setRight(game.getWorldWidth());
+				sel_move.setBottom(game.getWorldHeight());
 				moves.push_back(sel_move);
 				CMove scale_move;
 				scale_move.setAction(model::ActionType::SCALE);
