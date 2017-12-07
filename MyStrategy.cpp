@@ -1216,6 +1216,14 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						double direction_angle = atan2(direction.second / std::sqrt(direction.first * direction.first + direction.second * direction.second), direction.first / std::sqrt(direction.first * direction.first + direction.second * direction.second));
 						double delta_angle = direction_angle - current_angle;
 
+						if (std::abs(delta_angle) > PI)
+						{
+							if (delta_angle > 0.0)
+								delta_angle -= 2.0 * PI;
+							else
+								delta_angle += 2.0 * PI;
+						}
+
 						if (std::abs(delta_angle) > PI / 2.0)
 						{
 							if (current_angle > 0.0)
@@ -1224,6 +1232,14 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 								current_angle += PI;
 							
 							delta_angle = direction_angle - current_angle;
+
+							if (std::abs(delta_angle) > PI)
+							{
+								if (delta_angle > 0.0)
+									delta_angle -= 2.0 * PI;
+								else
+									delta_angle += 2.0 * PI;
+							}
 						}
 
 						CMove rotate_move;
