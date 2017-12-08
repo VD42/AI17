@@ -444,7 +444,7 @@ dir_enum GetStartMove1(std::vector<std::vector<bool>> & field, std::pair<int, in
 		}
 		return dir_enum::wait;
 	}
-	
+
 	throw 0; // impossible
 }
 
@@ -455,145 +455,145 @@ void DoStartMove(model::Game const& game, std::vector<CMove> & moves, model::Veh
 	case dir_enum::wait:
 		return;
 	case dir_enum::left:
-		{
-			CMove sel_move;
-			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setLeft(0.0);
-			sel_move.setTop(0.0);
-			sel_move.setRight(game.getWorldWidth());
-			sel_move.setBottom(game.getWorldHeight());
-			sel_move.setVehicleType(type);
-			moves.push_back(sel_move);
-			CMove move_move;
-			move_move.setAction(model::ActionType::MOVE);
-			move_move.setX(-74.0);
-			move_move.setY(0.0);
-			moves.push_back(move_move);
-		}
-		return;
+	{
+		CMove sel_move;
+		sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+		sel_move.setLeft(0.0);
+		sel_move.setTop(0.0);
+		sel_move.setRight(game.getWorldWidth());
+		sel_move.setBottom(game.getWorldHeight());
+		sel_move.setVehicleType(type);
+		moves.push_back(sel_move);
+		CMove move_move;
+		move_move.setAction(model::ActionType::MOVE);
+		move_move.setX(-74.0);
+		move_move.setY(0.0);
+		moves.push_back(move_move);
+	}
+	return;
 	case dir_enum::top:
-		{
-			CMove sel_move;
-			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setLeft(0.0);
-			sel_move.setTop(0.0);
-			sel_move.setRight(game.getWorldWidth());
-			sel_move.setBottom(game.getWorldHeight());
-			sel_move.setVehicleType(type);
-			moves.push_back(sel_move);
-			CMove move_move;
-			move_move.setAction(model::ActionType::MOVE);
-			move_move.setX(0.0);
-			move_move.setY(-74.0);
-			moves.push_back(move_move);
-		}
-		return;
+	{
+		CMove sel_move;
+		sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+		sel_move.setLeft(0.0);
+		sel_move.setTop(0.0);
+		sel_move.setRight(game.getWorldWidth());
+		sel_move.setBottom(game.getWorldHeight());
+		sel_move.setVehicleType(type);
+		moves.push_back(sel_move);
+		CMove move_move;
+		move_move.setAction(model::ActionType::MOVE);
+		move_move.setX(0.0);
+		move_move.setY(-74.0);
+		moves.push_back(move_move);
+	}
+	return;
 	case dir_enum::right:
-		{
-			CMove sel_move;
-			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setLeft(0.0);
-			sel_move.setTop(0.0);
-			sel_move.setRight(game.getWorldWidth());
-			sel_move.setBottom(game.getWorldHeight());
-			sel_move.setVehicleType(type);
-			moves.push_back(sel_move);
-			CMove move_move;
-			move_move.setAction(model::ActionType::MOVE);
-			move_move.setX(74.0);
-			move_move.setY(0.0);
-			moves.push_back(move_move);
-		}
-		return;
+	{
+		CMove sel_move;
+		sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+		sel_move.setLeft(0.0);
+		sel_move.setTop(0.0);
+		sel_move.setRight(game.getWorldWidth());
+		sel_move.setBottom(game.getWorldHeight());
+		sel_move.setVehicleType(type);
+		moves.push_back(sel_move);
+		CMove move_move;
+		move_move.setAction(model::ActionType::MOVE);
+		move_move.setX(74.0);
+		move_move.setY(0.0);
+		moves.push_back(move_move);
+	}
+	return;
 	case dir_enum::bottom:
-		{
-			CMove sel_move;
-			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setLeft(0.0);
-			sel_move.setTop(0.0);
-			sel_move.setRight(game.getWorldWidth());
-			sel_move.setBottom(game.getWorldHeight());
-			sel_move.setVehicleType(type);
-			moves.push_back(sel_move);
-			CMove move_move;
-			move_move.setAction(model::ActionType::MOVE);
-			move_move.setX(0.0);
-			move_move.setY(74.0);
-			moves.push_back(move_move);
-		}
-		return;
+	{
+		CMove sel_move;
+		sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+		sel_move.setLeft(0.0);
+		sel_move.setTop(0.0);
+		sel_move.setRight(game.getWorldWidth());
+		sel_move.setBottom(game.getWorldHeight());
+		sel_move.setVehicleType(type);
+		moves.push_back(sel_move);
+		CMove move_move;
+		move_move.setAction(model::ActionType::MOVE);
+		move_move.setX(0.0);
+		move_move.setY(74.0);
+		moves.push_back(move_move);
+	}
+	return;
 	case dir_enum::top_ch:
-		{
-			CMove sel_move;
-			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setLeft(0.0);
-			sel_move.setTop(0.0);
-			sel_move.setRight(game.getWorldWidth());
-			sel_move.setBottom(game.getWorldHeight());
-			sel_move.setVehicleType(type);
-			moves.push_back(sel_move);
-			CMove rotate_move;
-			rotate_move.setAction(model::ActionType::ROTATE);
-			rotate_move.setX(45.0 + (pos.first) * 74.0);
-			rotate_move.setY(45.0 + (pos.second - 1) * 74.0);
-			rotate_move.setAngle(PI / 2.0);
-			moves.push_back(rotate_move);
-		}
-		return;
+	{
+		CMove sel_move;
+		sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+		sel_move.setLeft(0.0);
+		sel_move.setTop(0.0);
+		sel_move.setRight(game.getWorldWidth());
+		sel_move.setBottom(game.getWorldHeight());
+		sel_move.setVehicleType(type);
+		moves.push_back(sel_move);
+		CMove rotate_move;
+		rotate_move.setAction(model::ActionType::ROTATE);
+		rotate_move.setX(45.0 + (pos.first) * 74.0);
+		rotate_move.setY(45.0 + (pos.second - 1) * 74.0);
+		rotate_move.setAngle(PI / 2.0);
+		moves.push_back(rotate_move);
+	}
+	return;
 	case dir_enum::top_ach:
-		{
-			CMove sel_move;
-			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setLeft(0.0);
-			sel_move.setTop(0.0);
-			sel_move.setRight(game.getWorldWidth());
-			sel_move.setBottom(game.getWorldHeight());
-			sel_move.setVehicleType(type);
-			moves.push_back(sel_move);
-			CMove rotate_move;
-			rotate_move.setAction(model::ActionType::ROTATE);
-			rotate_move.setX(45.0 + (pos.first) * 74.0);
-			rotate_move.setY(45.0 + (pos.second - 1) * 74.0);
-			rotate_move.setAngle(-PI / 2.0);
-			moves.push_back(rotate_move);
-		}
-		return;
+	{
+		CMove sel_move;
+		sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+		sel_move.setLeft(0.0);
+		sel_move.setTop(0.0);
+		sel_move.setRight(game.getWorldWidth());
+		sel_move.setBottom(game.getWorldHeight());
+		sel_move.setVehicleType(type);
+		moves.push_back(sel_move);
+		CMove rotate_move;
+		rotate_move.setAction(model::ActionType::ROTATE);
+		rotate_move.setX(45.0 + (pos.first) * 74.0);
+		rotate_move.setY(45.0 + (pos.second - 1) * 74.0);
+		rotate_move.setAngle(-PI / 2.0);
+		moves.push_back(rotate_move);
+	}
+	return;
 	case dir_enum::bot_ch:
-		{
-			CMove sel_move;
-			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setLeft(0.0);
-			sel_move.setTop(0.0);
-			sel_move.setRight(game.getWorldWidth());
-			sel_move.setBottom(game.getWorldHeight());
-			sel_move.setVehicleType(type);
-			moves.push_back(sel_move);
-			CMove rotate_move;
-			rotate_move.setAction(model::ActionType::ROTATE);
-			rotate_move.setX(45.0 + (pos.first) * 74.0);
-			rotate_move.setY(45.0 + (pos.second + 1) * 74.0);
-			rotate_move.setAngle(PI / 2.0);
-			moves.push_back(rotate_move);
-		}
-		return;
+	{
+		CMove sel_move;
+		sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+		sel_move.setLeft(0.0);
+		sel_move.setTop(0.0);
+		sel_move.setRight(game.getWorldWidth());
+		sel_move.setBottom(game.getWorldHeight());
+		sel_move.setVehicleType(type);
+		moves.push_back(sel_move);
+		CMove rotate_move;
+		rotate_move.setAction(model::ActionType::ROTATE);
+		rotate_move.setX(45.0 + (pos.first) * 74.0);
+		rotate_move.setY(45.0 + (pos.second + 1) * 74.0);
+		rotate_move.setAngle(PI / 2.0);
+		moves.push_back(rotate_move);
+	}
+	return;
 	case dir_enum::bot_ach:
-		{
-			CMove sel_move;
-			sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-			sel_move.setLeft(0.0);
-			sel_move.setTop(0.0);
-			sel_move.setRight(game.getWorldWidth());
-			sel_move.setBottom(game.getWorldHeight());
-			sel_move.setVehicleType(type);
-			moves.push_back(sel_move);
-			CMove rotate_move;
-			rotate_move.setAction(model::ActionType::ROTATE);
-			rotate_move.setX(45.0 + (pos.first) * 74.0);
-			rotate_move.setY(45.0 + (pos.second + 1) * 74.0);
-			rotate_move.setAngle(-PI / 2.0);
-			moves.push_back(rotate_move);
-		}
-		return;
+	{
+		CMove sel_move;
+		sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+		sel_move.setLeft(0.0);
+		sel_move.setTop(0.0);
+		sel_move.setRight(game.getWorldWidth());
+		sel_move.setBottom(game.getWorldHeight());
+		sel_move.setVehicleType(type);
+		moves.push_back(sel_move);
+		CMove rotate_move;
+		rotate_move.setAction(model::ActionType::ROTATE);
+		rotate_move.setX(45.0 + (pos.first) * 74.0);
+		rotate_move.setY(45.0 + (pos.second + 1) * 74.0);
+		rotate_move.setAngle(-PI / 2.0);
+		moves.push_back(rotate_move);
+	}
+	return;
 	}
 }
 
@@ -745,7 +745,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		auto tank_pos = GetCenter(me.getId(), vehicles, model::VehicleType::TANK);
 		auto fighter_pos = GetCenter(me.getId(), vehicles, model::VehicleType::FIGHTER);
 		auto helicopter_pos = GetCenter(me.getId(), vehicles, model::VehicleType::HELICOPTER);
-		
+
 		auto arrv_ipos = std::make_pair((int)(arrv_pos.first / 72.0), (int)(arrv_pos.second / 72.0));
 		auto ifv_ipos = std::make_pair((int)(ifv_pos.first / 72.0), (int)(ifv_pos.second / 72.0));
 		auto tank_ipos = std::make_pair((int)(tank_pos.first / 72.0), (int)(tank_pos.second / 72.0));
@@ -1177,25 +1177,54 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				alive_count++;
 			}
 
-			if (alive_count < 120) // probably server has a bug with max 11 * 11 units on factory place
+			if (alive_count < 150)
 			{
-				for (auto const& f : world.getFacilities())
+				if (recruiting_fid != -1)
 				{
-					if (f.getOwnerPlayerId() != me.getId())
-						continue;
-					if (f.getType() != model::FacilityType::VEHICLE_FACTORY)
-						continue;
-					double squared_distance = (current_position.first - f.getLeft() - 32.0) * (current_position.first - f.getLeft() - 32.0) + (current_position.second - f.getTop() - 32.0) * (current_position.second - f.getTop() - 32.0);
-					if (squared_distance > 32.0 * 32.0)
-						continue;
-					CMove prod_move;
-					prod_move.setAction(model::ActionType::SETUP_VEHICLE_PRODUCTION);
-					prod_move.setFacilityId(f.getId());
-					prod_move.setVehicleType(model::VehicleType::TANK);
-					moves.push_back(prod_move);
-					recruiting_fid = f.getId();
 					recruiting = true;
-					break;
+					if (world.getTickIndex() % 300 == 0)
+					{
+						CMove sel_move;
+						sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+						sel_move.setLeft(0.0);
+						sel_move.setTop(0.0);
+						sel_move.setRight(game.getWorldWidth());
+						sel_move.setBottom(game.getWorldHeight());
+						moves.push_back(sel_move);
+						CMove scale_move;
+						scale_move.setAction(model::ActionType::SCALE);
+						scale_move.setX(current_position.first);
+						scale_move.setY(current_position.second);
+						scale_move.setFactor(0.1);
+						moves.push_back(scale_move);
+					}
+				}
+				else
+				{
+					for (auto const& f : world.getFacilities())
+					{
+						if (f.getOwnerPlayerId() != me.getId())
+							continue;
+						if (f.getType() != model::FacilityType::VEHICLE_FACTORY)
+							continue;
+						double squared_distance = (current_position.first - f.getLeft() - 32.0) * (current_position.first - f.getLeft() - 32.0) + (current_position.second - f.getTop() - 32.0) * (current_position.second - f.getTop() - 32.0);
+						if (squared_distance > 32.0 * 32.0)
+							continue;
+						CMove scale_move;
+						scale_move.setAction(model::ActionType::SCALE);
+						scale_move.setX(current_position.first);
+						scale_move.setY(current_position.second);
+						scale_move.setFactor(1.0);
+						moves.push_back(scale_move);
+						CMove prod_move;
+						prod_move.setAction(model::ActionType::SETUP_VEHICLE_PRODUCTION);
+						prod_move.setFacilityId(f.getId());
+						prod_move.setVehicleType(model::VehicleType::TANK);
+						moves.push_back(prod_move);
+						recruiting_fid = f.getId();
+						recruiting = true;
+						break;
+					}
 				}
 			}
 
@@ -1302,11 +1331,11 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							/*
 							if (f.getType() == model::FacilityType::VEHICLE_FACTORY && f.getVehicleType() == model::VehicleType::_UNKNOWN_)
 							{
-								CMove prod_move;
-								prod_move.setAction(model::ActionType::SETUP_VEHICLE_PRODUCTION);
-								prod_move.setFacilityId(f.getId());
-								prod_move.setVehicleType(model::VehicleType::TANK);
-								moves.push_back(prod_move);
+							CMove prod_move;
+							prod_move.setAction(model::ActionType::SETUP_VEHICLE_PRODUCTION);
+							prod_move.setFacilityId(f.getId());
+							prod_move.setVehicleType(model::VehicleType::TANK);
+							moves.push_back(prod_move);
 							}
 							*/
 							continue;
