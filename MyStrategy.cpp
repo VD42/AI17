@@ -696,11 +696,16 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	static std::vector<CMove> moves = { CMove() };
 	static int current_move = 1;
 	static int last_moving_move = 0;
+	static int last_new_vehicles_tick = -1;
 
 	// update vehicles list
 
 	for (auto const& v : world.getNewVehicles())
+	{
+		if (v.getPlayerId() == me.getId())
+			last_new_vehicles_tick = world.getTickIndex();
 		vehicles.push_back(v);
+	}
 
 	bool moving = false;
 
@@ -1165,7 +1170,9 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			}
 
 			static long long recruiting_fid = -1;
-			bool recruiting = false;
+			static int last_brake_recruiting_tick = -1;
+			const int recruiting_limit = 300;
+			bool need_selection = false;
 
 			int alive_count = 0;
 			for (auto const& v : vehicles)
@@ -1175,31 +1182,27 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				if (v.getDurability() == 0)
 					continue;
 				alive_count++;
+				if (!v.isSelected())
+					need_selection = true;
 			}
 
-			if (alive_count < 150)
+			if (recruiting_fid != -1)
 			{
-				if (recruiting_fid != -1)
+				if (last_new_vehicles_tick + 60 < world.getTickIndex() || alive_count >= recruiting_limit)
 				{
-					recruiting = true;
-					if (world.getTickIndex() % 300 == 0)
-					{
-						CMove sel_move;
-						sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-						sel_move.setLeft(0.0);
-						sel_move.setTop(0.0);
-						sel_move.setRight(game.getWorldWidth());
-						sel_move.setBottom(game.getWorldHeight());
-						moves.push_back(sel_move);
-						CMove scale_move;
-						scale_move.setAction(model::ActionType::SCALE);
-						scale_move.setX(current_position.first);
-						scale_move.setY(current_position.second);
-						scale_move.setFactor(0.1);
-						moves.push_back(scale_move);
-					}
+					CMove prod_move;
+					prod_move.setAction(model::ActionType::SETUP_VEHICLE_PRODUCTION);
+					prod_move.setFacilityId(recruiting_fid);
+					prod_move.setVehicleType(model::VehicleType::_UNKNOWN_);
+					moves.push_back(prod_move);
+
+					last_brake_recruiting_tick = world.getTickIndex();
+					recruiting_fid = -1;
 				}
-				else
+			}
+			else
+			{
+				if (last_brake_recruiting_tick + 360 < world.getTickIndex() && alive_count < recruiting_limit)
 				{
 					for (auto const& f : world.getFacilities())
 					{
@@ -1222,57 +1225,68 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						prod_move.setVehicleType(model::VehicleType::IFV);
 						moves.push_back(prod_move);
 						recruiting_fid = f.getId();
-						recruiting = true;
+						last_new_vehicles_tick = world.getTickIndex() + 1;
 						break;
 					}
 				}
 			}
 
-			if (!recruiting)
+			if (need_selection)
 			{
-				if (recruiting_fid != -1)
+				CMove sel_move;
+				sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
+				sel_move.setLeft(0.0);
+				sel_move.setTop(0.0);
+				sel_move.setRight(game.getWorldWidth());
+				sel_move.setBottom(game.getWorldHeight());
+				moves.push_back(sel_move);
+			}
+
+			enum class mode_action
+			{
+				rotate,
+				move,
+				scale
+			};
+
+			static mode_action last_mode = mode_action::scale;
+			static int lastScaleTick = 0;
+			static int lastRotateTick = 0;
+			static int rotatePrediction = 0;
+			static int lastMoveTick = 0;
+			static int movePrediction = 0;
+
+			if (last_mode == mode_action::scale && (stopped || lastScaleTick + 36 <= world.getTickIndex()))
+			{
+				last_mode = mode_action::rotate;
+				lastRotateTick = world.getTickIndex();
+				rotatePrediction = 0;
+				if (target_group.first)
 				{
-					CMove prod_move;
-					prod_move.setAction(model::ActionType::SETUP_VEHICLE_PRODUCTION);
-					prod_move.setFacilityId(recruiting_fid);
-					prod_move.setVehicleType(model::VehicleType::_UNKNOWN_);
-					moves.push_back(prod_move);
-					recruiting_fid = -1;
+					std::pair<double, double> direction = { target_group.second.first - current_position.first, target_group.second.second - current_position.second };
+					double length = std::sqrt(direction.first * direction.first + direction.second * direction.second);
 
-					CMove sel_move;
-					sel_move.setAction(model::ActionType::CLEAR_AND_SELECT);
-					sel_move.setLeft(0.0);
-					sel_move.setTop(0.0);
-					sel_move.setRight(game.getWorldWidth());
-					sel_move.setBottom(game.getWorldHeight());
-					moves.push_back(sel_move);
-				}
-
-				enum class mode_action
-				{
-					rotate,
-					move,
-					scale
-				};
-
-				static mode_action last_mode = mode_action::scale;
-				static int lastScaleTick = 0;
-				static int lastRotateTick = 0;
-				static int rotatePrediction = 0;
-				static int lastMoveTick = 0;
-				static int movePrediction = 0;
-
-				if (last_mode == mode_action::scale && stopped)
-				{
-					if (target_group.first)
+					if (10.0 < length && length < 512.0)
 					{
-						std::pair<double, double> direction = { target_group.second.first - current_position.first, target_group.second.second - current_position.second };
-						double length = std::sqrt(direction.first * direction.first + direction.second * direction.second);
+						double direction_angle = atan2(direction.second / length, direction.first / length);
+						double delta_angle = direction_angle - current_angle;
 
-						if (10.0 < length && length < 512.0)
+						if (std::abs(delta_angle) > PI)
 						{
-							double direction_angle = atan2(direction.second / length, direction.first / length);
-							double delta_angle = direction_angle - current_angle;
+							if (delta_angle > 0.0)
+								delta_angle -= 2.0 * PI;
+							else
+								delta_angle += 2.0 * PI;
+						}
+
+						if (std::abs(delta_angle) > PI / 2.0)
+						{
+							if (current_angle > 0.0)
+								current_angle -= PI;
+							else
+								current_angle += PI;
+
+							delta_angle = direction_angle - current_angle;
 
 							if (std::abs(delta_angle) > PI)
 							{
@@ -1281,44 +1295,30 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 								else
 									delta_angle += 2.0 * PI;
 							}
+						}
 
-							if (std::abs(delta_angle) > PI / 2.0)
-							{
-								if (current_angle > 0.0)
-									current_angle -= PI;
-								else
-									current_angle += PI;
+						if (std::abs(delta_angle) > 0.1)
+						{
+							CMove rotate_move;
+							rotate_move.setAction(model::ActionType::ROTATE);
+							rotate_move.setX(current_position.first);
+							rotate_move.setY(current_position.second);
+							rotate_move.setAngle(delta_angle);
+							rotate_move.setMaxAngularSpeed(PI / 800.0);
+							moves.push_back(rotate_move);
 
-								delta_angle = direction_angle - current_angle;
-
-								if (std::abs(delta_angle) > PI)
-								{
-									if (delta_angle > 0.0)
-										delta_angle -= 2.0 * PI;
-									else
-										delta_angle += 2.0 * PI;
-								}
-							}
-
-							if (std::abs(delta_angle) > 0.1)
-							{
-								CMove rotate_move;
-								rotate_move.setAction(model::ActionType::ROTATE);
-								rotate_move.setX(current_position.first);
-								rotate_move.setY(current_position.second);
-								rotate_move.setAngle(delta_angle);
-								rotate_move.setMaxAngularSpeed(PI / 800.0);
-								moves.push_back(rotate_move);
-
-								rotatePrediction = std::max(6, std::min(18, (int)(std::abs(delta_angle) / (PI / 800.0) + 0.5)));
-								lastRotateTick = world.getTickIndex();
-							}
+							rotatePrediction = std::max(6, std::min(18, (int)(std::abs(delta_angle) / (PI / 800.0) + 0.5)));
 						}
 					}
-					last_mode = mode_action::rotate;
 				}
+			}
 
-				if (last_mode == mode_action::rotate && lastRotateTick + rotatePrediction <= world.getTickIndex())
+			if (last_mode == mode_action::rotate && lastRotateTick + rotatePrediction <= world.getTickIndex())
+			{
+				last_mode = mode_action::move;
+				lastMoveTick = world.getTickIndex();
+				movePrediction = 0;
+				if (recruiting_fid == -1)
 				{
 					bool f_found = false;
 					double minSquaredDistance = 1024.0 * 1024.0;
@@ -1363,23 +1363,21 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						moves.push_back(move_move);
 
 						movePrediction = std::max(6, std::min(36, (int)(std::sqrt(minSquaredDistance) / (game.getTankSpeed() * 0.6) + 0.5)));
-						lastMoveTick = world.getTickIndex();
 					}
-					last_mode = mode_action::move;
 				}
+			}
 
-				if (last_mode == mode_action::move && lastMoveTick + movePrediction <= world.getTickIndex())
-				{
-					CMove scale_move;
-					scale_move.setAction(model::ActionType::SCALE);
-					scale_move.setX(current_position.first);
-					scale_move.setY(current_position.second);
-					scale_move.setFactor(0.1);
-					moves.push_back(scale_move);
+			if (last_mode == mode_action::move && lastMoveTick + movePrediction <= world.getTickIndex())
+			{
+				lastScaleTick = world.getTickIndex();
+				last_mode = mode_action::scale;
 
-					lastScaleTick = world.getTickIndex();
-					last_mode = mode_action::scale;
-				}
+				CMove scale_move;
+				scale_move.setAction(model::ActionType::SCALE);
+				scale_move.setX(current_position.first);
+				scale_move.setY(current_position.second);
+				scale_move.setFactor(0.1);
+				moves.push_back(scale_move);
 			}
 		}
 	}
