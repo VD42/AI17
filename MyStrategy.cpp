@@ -1219,7 +1219,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						CMove prod_move;
 						prod_move.setAction(model::ActionType::SETUP_VEHICLE_PRODUCTION);
 						prod_move.setFacilityId(f.getId());
-						prod_move.setVehicleType(model::VehicleType::TANK);
+						prod_move.setVehicleType(model::VehicleType::IFV);
 						moves.push_back(prod_move);
 						recruiting_fid = f.getId();
 						recruiting = true;
