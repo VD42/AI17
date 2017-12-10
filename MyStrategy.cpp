@@ -1369,15 +1369,22 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 			if (last_mode == mode_action::move && lastMoveTick + movePrediction <= world.getTickIndex())
 			{
+				bool need_scale = true;
+				if (lastScaleTick + 6 > world.getTickIndex())
+					need_scale = false;
+
 				lastScaleTick = world.getTickIndex();
 				last_mode = mode_action::scale;
 
-				CMove scale_move;
-				scale_move.setAction(model::ActionType::SCALE);
-				scale_move.setX(current_position.first);
-				scale_move.setY(current_position.second);
-				scale_move.setFactor(0.1);
-				moves.push_back(scale_move);
+				if (need_scale)
+				{
+					CMove scale_move;
+					scale_move.setAction(model::ActionType::SCALE);
+					scale_move.setX(current_position.first);
+					scale_move.setY(current_position.second);
+					scale_move.setFactor(0.1);
+					moves.push_back(scale_move);
+				}
 			}
 		}
 	}
