@@ -10,6 +10,122 @@
 #include <functional>
 #include <algorithm>
 
+class CFastVehicle
+{
+private:
+
+	// model::Unit
+
+	long long id;
+	double x;
+	double y;
+
+	// model::CircularUnit
+
+	//double radius;
+
+	// model::Vehicle
+
+	long long playerId;
+	int durability;
+	int maxDurability;
+	//double maxSpeed;
+	double visionRange;
+	//double squaredVisionRange;
+	//double groundAttackRange;
+	//double squaredGroundAttackRange;
+	//double aerialAttackRange;
+	//double squaredAerialAttackRange;
+	//int groundDamage;
+	//int aerialDamage;
+	//int groundDefence;
+	//int aerialDefence;
+	//int attackCooldownTicks;
+	//int remainingAttackCooldownTicks;
+	model::VehicleType type;
+	bool aerial;
+	bool selected;
+	//std::vector<int> groups;
+
+public:
+	CFastVehicle(model::Vehicle const& vehicle)
+	{
+		id = vehicle.getId();
+		x = vehicle.getX();
+		y = vehicle.getY();
+
+		//radius = vehicle.getRadius();
+
+		playerId = vehicle.getPlayerId();
+		durability = vehicle.getDurability();
+		maxDurability = vehicle.getMaxDurability();
+		//maxSpeed = vehicle.getMaxSpeed();
+		visionRange = vehicle.getVisionRange();
+		//squaredVisionRange = vehicle.getSquaredVisionRange();
+		//groundAttackRange = vehicle.getGroundAttackRange();
+		//squaredGroundAttackRange = vehicle.getSquaredGroundAttackRange();
+		//aerialAttackRange = vehicle.getAerialAttackRange();
+		//squaredAerialAttackRange = vehicle.getSquaredAerialAttackRange();
+		//groundDamage = vehicle.getGroundDamage();
+		//aerialDamage = vehicle.getAerialDamage();
+		//groundDefence = vehicle.getGroundDefence();
+		//aerialDefence = vehicle.getAerialDefence();
+		//attackCooldownTicks = vehicle.getAttackCooldownTicks();
+		//remainingAttackCooldownTicks = vehicle.getRemainingAttackCooldownTicks();
+		type = vehicle.getType();
+		aerial = vehicle.isAerial();
+		selected = vehicle.isSelected();
+		//groups = vehicle.getGroups();
+	}
+
+	void Update(double ux, double uy, int ud, bool us)
+	{
+		x = ux;
+		y = uy;
+		durability = ud;
+		//remainingAttackCooldownTicks = update.getRemainingAttackCooldownTicks();
+		selected = us;
+		//groups = update.getGroups();
+	}
+
+	// model::Unit
+
+	__forceinline long long getId() const { return id; }
+	__forceinline double getX() const { return x; }
+	__forceinline double getY() const { return y; }
+	__forceinline double getDistanceTo(double x, double y) const { double xRange = x - this->x; double yRange = y - this->y; return std::sqrt(xRange * xRange + yRange * yRange); }
+	__forceinline double getDistanceTo(CFastVehicle const& unit) const { return getDistanceTo(unit.x, unit.y); }
+	__forceinline double getSquaredDistanceTo(double x, double y) const { double xRange = x - this->x; double yRange = y - this->y; return xRange * xRange + yRange * yRange; }
+	__forceinline double getSquaredDistanceTo(CFastVehicle const& unit) const { return getSquaredDistanceTo(unit.x, unit.y); }
+
+	// model::CircularUnit
+
+	//double getRadius() const { return radius; }
+
+	// model::Vehicle
+
+	__forceinline long long getPlayerId() const { return playerId; }
+	__forceinline int getDurability() const { return durability; }
+	__forceinline int getMaxDurability() const { return maxDurability; }
+	//double getMaxSpeed() const { return maxSpeed; }
+	__forceinline double getVisionRange() const { return visionRange; }
+	//double getSquaredVisionRange() const { return squaredVisionRange; }
+	//double getGroundAttackRange() const { return groundAttackRange; }
+	//double getSquaredGroundAttackRange() const { return squaredAerialAttackRange; }
+	//double getAerialAttackRange() const { return aerialAttackRange; }
+	//double getSquaredAerialAttackRange() const { return squaredAerialAttackRange; }
+	//int getGroundDamage() const { return groundDamage; }
+	//int getAerialDamage() const { return aerialDamage; }
+	//int getGroundDefence() const { return groundDefence; }
+	//int getAerialDefence() const { return aerialDefence; }
+	//int getAttackCooldownTicks() const { return attackCooldownTicks; }
+	//int getRemainingAttackCooldownTicks() const { return remainingAttackCooldownTicks; }
+	__forceinline model::VehicleType getType() const { return type; }
+	__forceinline bool isAerial() const { return aerial; }
+	__forceinline bool isSelected() const { return selected; }
+	//std::vector<int> const& getGroups() const { return groups; }
+};
+
 class CMove : public model::Move
 {
 public:
@@ -17,7 +133,7 @@ public:
 	CMove() : model::Move(), m_wait_completion(false) {}
 };
 
-std::pair<double, double> GetCenter(long long pid, std::vector<model::Vehicle> const& vehicles, model::VehicleType type)
+std::pair<double, double> GetCenter(long long pid, std::vector<CFastVehicle> const& vehicles, model::VehicleType type)
 {
 	int count = 0;
 	std::pair<double, double> result;
@@ -597,9 +713,9 @@ void DoStartMove(model::Game const& game, std::vector<CMove> & moves, model::Veh
 	}
 }
 
-std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(long long pid, std::vector<model::Vehicle> const& vehicles, std::pair<double, double> current_position)
+std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(long long pid, std::vector<CFastVehicle> const& vehicles, std::pair<double, double> current_position)
 {
-	std::vector<std::vector<std::reference_wrapper<model::Vehicle const>>> groups;
+	std::vector<std::vector<std::reference_wrapper<CFastVehicle const>>> groups;
 
 	for (auto const& v : vehicles)
 	{
@@ -665,7 +781,7 @@ std::pair<bool, std::pair<double, double>> GetNearestGroupCenter(long long pid, 
 	return std::make_pair(minGroup != -1, std::make_pair(minX, minY));
 }
 
-__forceinline double GetTerrainWeatherVisionCoef(model::Game const& game, model::World const& world, model::Vehicle const& v)
+__forceinline double GetTerrainWeatherVisionCoef(model::Game const& game, model::World const& world, CFastVehicle const& v)
 {
 	int X = (int)(v.getX() / 32.0);
 	int Y = (int)(v.getY() / 32.0);
@@ -692,31 +808,43 @@ __forceinline double GetTerrainWeatherVisionCoef(model::Game const& game, model:
 
 void MyStrategy::move(model::Player const& me, model::World const& world, model::Game const& game, model::Move & new_move)
 {
-	static std::vector<model::Vehicle> vehicles;
+	static std::vector<CFastVehicle> vehicles;
 	static std::vector<CMove> moves = { CMove() };
 	static int current_move = 1;
 	static int last_moving_move = 0;
 	static int last_new_vehicles_tick = -1;
+	static long long pid = me.getId();
+
+	if (vehicles.empty())
+		vehicles.reserve(10000);
 
 	// update vehicles list
 
 	for (auto const& v : world.getNewVehicles())
 	{
-		if (v.getPlayerId() == me.getId())
-			last_new_vehicles_tick = world.getTickIndex();
 		vehicles.push_back(v);
+		if (vehicles.back().getPlayerId() == pid)
+			last_new_vehicles_tick = world.getTickIndex();
 	}
 
 	bool moving = false;
 
 	for (auto const& u : world.getVehicleUpdates())
+	{
+		long long uid = u.getId();
+		double ux = u.getX();
+		double uy = u.getY();
+		int ud = u.getDurability();
+		bool us = u.isSelected();
 		for (auto & v : vehicles)
-			if (u.getId() == v.getId())
+			if (uid == v.getId())
 			{
-				if (!moving && v.getPlayerId() == me.getId() && u.getDurability() != 0 && (u.getX() != v.getX() || u.getY() != v.getY()))
+				if (!moving && v.getPlayerId() == pid && ud != 0 && (ux != v.getX() || uy != v.getY()))
 					moving = true;
-				v = model::Vehicle(v, u);
+				v.Update(ux, uy, ud, us);
+				break;
 			}
+	}
 
 	if (moving)
 		last_moving_move = world.getTickIndex();
@@ -745,11 +873,11 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			{ false, false, false }
 		};
 
-		auto arrv_pos = GetCenter(me.getId(), vehicles, model::VehicleType::ARRV);
-		auto ifv_pos = GetCenter(me.getId(), vehicles, model::VehicleType::IFV);
-		auto tank_pos = GetCenter(me.getId(), vehicles, model::VehicleType::TANK);
-		auto fighter_pos = GetCenter(me.getId(), vehicles, model::VehicleType::FIGHTER);
-		auto helicopter_pos = GetCenter(me.getId(), vehicles, model::VehicleType::HELICOPTER);
+		auto arrv_pos = GetCenter(pid, vehicles, model::VehicleType::ARRV);
+		auto ifv_pos = GetCenter(pid, vehicles, model::VehicleType::IFV);
+		auto tank_pos = GetCenter(pid, vehicles, model::VehicleType::TANK);
+		auto fighter_pos = GetCenter(pid, vehicles, model::VehicleType::FIGHTER);
+		auto helicopter_pos = GetCenter(pid, vehicles, model::VehicleType::HELICOPTER);
 
 		auto arrv_ipos = std::make_pair((int)(arrv_pos.first / 72.0), (int)(arrv_pos.second / 72.0));
 		auto ifv_ipos = std::make_pair((int)(ifv_pos.first / 72.0), (int)(ifv_pos.second / 72.0));
@@ -996,7 +1124,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			bool detected = false;
 			for (auto const& v : vehicles)
 			{
-				if (v.getPlayerId() != me.getId())
+				if (v.getPlayerId() != pid)
 					continue;
 				if (v.getDurability() == 0)
 					continue;
@@ -1022,7 +1150,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		}
 		else
 		{
-			auto target_group = GetNearestGroupCenter(me.getId(), vehicles, current_position);
+			auto target_group = GetNearestGroupCenter(pid, vehicles, current_position);
 
 			if (me.getRemainingNuclearStrikeCooldownTicks() == 0)
 			{
@@ -1032,7 +1160,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				{
 					for (auto const& v : vehicles)
 					{
-						if (v.getPlayerId() != me.getId())
+						if (v.getPlayerId() != pid)
 							continue;
 						if (v.getDurability() == 0)
 							continue;
@@ -1054,11 +1182,11 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 				if (STRIIIIIIIIKE)
 				{
-					std::vector<std::pair<std::reference_wrapper<model::Vehicle const>, double>> targets;
+					std::vector<std::pair<std::reference_wrapper<CFastVehicle const>, double>> targets;
 
 					for (auto const& probable_target : vehicles)
 					{
-						if (probable_target.getPlayerId() == me.getId())
+						if (probable_target.getPlayerId() == pid)
 							continue;
 						if (probable_target.getDurability() == 0)
 							continue;
@@ -1067,7 +1195,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						bool has_source = false;
 						for (auto const& source : vehicles)
 						{
-							if (source.getPlayerId() != me.getId())
+							if (source.getPlayerId() != pid)
 								continue;
 							if (source.getDurability() == 0)
 								continue;
@@ -1094,7 +1222,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							if (squared_distance > game.getTacticalNuclearStrikeRadius() * game.getTacticalNuclearStrikeRadius())
 								continue;
 							auto damage = ((game.getTacticalNuclearStrikeRadius() - probable_target.getDistanceTo(dam)) / game.getTacticalNuclearStrikeRadius()) * game.getMaxTacticalNuclearStrikeDamage();
-							if (dam.getPlayerId() == me.getId())
+							if (dam.getPlayerId() == pid)
 							{
 								if (dam.getDurability() <= (int)damage)
 								{
@@ -1114,11 +1242,11 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 								double coef = 1.0;
 								for (auto const& heal : vehicles)
 								{
-									if (heal.getPlayerId() == me.getId())
-										continue;
-									if (heal.getType() != model::VehicleType::ARRV)
+									if (heal.getPlayerId() == pid)
 										continue;
 									if (heal.getDurability() == 0)
+										continue;
+									if (heal.getType() != model::VehicleType::ARRV)
 										continue;
 									if (dam.getSquaredDistanceTo(heal) > game.getArrvRepairRange() * game.getArrvRepairRange())
 										continue;
@@ -1132,7 +1260,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							continue;
 						if (friendly_health > 1.2 * enemy_health)
 							continue;
-						targets.push_back(std::make_pair(std::reference_wrapper<model::Vehicle const>(probable_target), enemy_health - friendly_health));
+						targets.push_back(std::make_pair(std::reference_wrapper<CFastVehicle const>(probable_target), enemy_health - friendly_health));
 					}
 
 					auto best_target = std::max_element(targets.begin(), targets.end(), [] (decltype(targets)::const_reference a, decltype(targets)::const_reference b) {
@@ -1146,7 +1274,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 						for (auto const& v : vehicles)
 						{
-							if (v.getPlayerId() != me.getId())
+							if (v.getPlayerId() != pid)
 								continue;
 							if (v.getDurability() == 0)
 								continue;
@@ -1177,7 +1305,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			int alive_count = 0;
 			for (auto const& v : vehicles)
 			{
-				if (v.getPlayerId() != me.getId())
+				if (v.getPlayerId() != pid)
 					continue;
 				if (v.getDurability() == 0)
 					continue;
@@ -1206,7 +1334,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				{
 					for (auto const& f : world.getFacilities())
 					{
-						if (f.getOwnerPlayerId() != me.getId())
+						if (f.getOwnerPlayerId() != pid)
 							continue;
 						if (f.getType() != model::FacilityType::VEHICLE_FACTORY)
 							continue;
@@ -1326,7 +1454,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					double minY = 0.0;
 					for (auto const& f : world.getFacilities())
 					{
-						if (f.getOwnerPlayerId() == me.getId())
+						if (f.getOwnerPlayerId() == pid)
 						{
 							/*
 							if (f.getType() == model::FacilityType::VEHICLE_FACTORY && f.getVehicleType() == model::VehicleType::_UNKNOWN_)
