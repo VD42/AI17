@@ -820,11 +820,23 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 	// update vehicles list
 
-	for (auto const& v : world.getNewVehicles())
+	for (auto const& nv : world.getNewVehicles())
 	{
-		vehicles.push_back(v);
-		if (vehicles.back().getPlayerId() == pid)
-			last_new_vehicles_tick = world.getTickIndex();
+		long long nvid = nv.getId();
+		bool found = false;
+		for (auto & v : vehicles)
+			if (nvid == v.getId())
+			{
+				found = true;
+				v = nv;
+				break;
+			}
+		if (!found)
+		{
+			vehicles.push_back(nv);
+			if (vehicles.back().getPlayerId() == pid)
+				last_new_vehicles_tick = world.getTickIndex();
+		}
 	}
 
 	bool moving = false;
