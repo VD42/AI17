@@ -1464,22 +1464,13 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					double minSquaredDistance = 1024.0 * 1024.0;
 					double minX = 0.0;
 					double minY = 0.0;
+
 					for (auto const& f : world.getFacilities())
 					{
-						if (f.getOwnerPlayerId() == pid)
-						{
-							/*
-							if (f.getType() == model::FacilityType::VEHICLE_FACTORY && f.getVehicleType() == model::VehicleType::_UNKNOWN_)
-							{
-							CMove prod_move;
-							prod_move.setAction(model::ActionType::SETUP_VEHICLE_PRODUCTION);
-							prod_move.setFacilityId(f.getId());
-							prod_move.setVehicleType(model::VehicleType::TANK);
-							moves.push_back(prod_move);
-							}
-							*/
+						if (f.getOwnerPlayerId() != pid)
 							continue;
-						}
+						if ((double)f.getCapturePoints() > (double)game.getMaxFacilityCapturePoints() / 0.75)
+							continue;
 						if (!(64.0 - 0.1 < f.getLeft() && f.getLeft() < game.getWorldWidth() - 64.0 - 64.0 + 0.1))
 							continue;
 						if (!(64.0 - 0.1 < f.getTop() && f.getTop() < game.getWorldHeight() - 64.0 - 64.0 + 0.1))
@@ -1493,6 +1484,28 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							minSquaredDistance = squared_distance;
 						}
 					}
+
+					if (!f_found)
+					{
+						for (auto const& f : world.getFacilities())
+						{
+							if (f.getOwnerPlayerId() == pid)
+								continue;
+							if (!(64.0 - 0.1 < f.getLeft() && f.getLeft() < game.getWorldWidth() - 64.0 - 64.0 + 0.1))
+								continue;
+							if (!(64.0 - 0.1 < f.getTop() && f.getTop() < game.getWorldHeight() - 64.0 - 64.0 + 0.1))
+								continue;
+							double squared_distance = (current_position.first - f.getLeft() - 32.0) * (current_position.first - f.getLeft() - 32.0) + (current_position.second - f.getTop() - 32.0) * (current_position.second - f.getTop() - 32.0);
+							if (squared_distance < minSquaredDistance)
+							{
+								f_found = true;
+								minX = f.getLeft() + 32.0;
+								minY = f.getTop() + 32.0;
+								minSquaredDistance = squared_distance;
+							}
+						}
+					}
+
 					if (f_found && minSquaredDistance > 10.0 * 10.0)
 					{
 						CMove move_move;
