@@ -862,7 +862,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		last_moving_move = world.getTickIndex();
 
 	bool stopped = false;
-	if (last_moving_move + 2 < world.getTickIndex())
+	if (last_moving_move + 1 <= world.getTickIndex())
 		stopped = true;
 
 	// strategy
