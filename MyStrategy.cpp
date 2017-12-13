@@ -1469,7 +1469,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 					{
 						if (f.getOwnerPlayerId() != pid)
 							continue;
-						if ((double)f.getCapturePoints() > (double)game.getMaxFacilityCapturePoints() / 0.75)
+						if ((double)f.getCapturePoints() > (double)game.getMaxFacilityCapturePoints() * 0.75)
 							continue;
 						if (!(64.0 - 0.1 < f.getLeft() && f.getLeft() < game.getWorldWidth() - 64.0 - 64.0 + 0.1))
 							continue;
