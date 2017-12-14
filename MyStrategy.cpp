@@ -1490,6 +1490,8 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						{
 							if (!(f.getOwnerPlayerId() == pid || f.getOwnerPlayerId() == -1))
 								continue;
+							if (f.getType() != model::FacilityType::CONTROL_CENTER)
+								continue;
 							if (!(64.0 - 0.1 < f.getLeft() && f.getLeft() < game.getWorldWidth() - 64.0 - 64.0 + 0.1))
 								continue;
 							if (!(64.0 - 0.1 < f.getTop() && f.getTop() < game.getWorldHeight() - 64.0 - 64.0 + 0.1))
