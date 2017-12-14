@@ -1492,7 +1492,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						}
 					}
 
-					for (auto const& f : world.getFacilities())
+					/*for (auto const& f : world.getFacilities())
 					{
 						if (!(f.getOwnerPlayerId() == pid || f.getOwnerPlayerId() == -1))
 							continue;
@@ -1516,13 +1516,15 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							minFacilityId = f.getId();
 							minSquaredDistance = squared_distance;
 						}
-					}
+					}*/
 
-					if (minFacilityId == -1)
-					{
+					//if (minFacilityId == -1)
+					//{
 						for (auto const& f : world.getFacilities())
 						{
 							if (f.getOwnerPlayerId() == pid)
+								continue;
+							if (f.getOwnerPlayerId() != -1 && f.getType() == model::FacilityType::CONTROL_CENTER)
 								continue;
 							if (!(64.0 - 0.1 < f.getLeft() && f.getLeft() < game.getWorldWidth() - 64.0 - 64.0 + 0.1))
 								continue;
@@ -1535,7 +1537,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 								minSquaredDistance = squared_distance;
 							}
 						}
-					}
+					//}
 
 					go_to_facility = minFacilityId;
 
