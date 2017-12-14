@@ -1483,6 +1483,8 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						double speed = facilities_cur_state[f.getId()].second - facilities_prev_state[f.getId()].second;
 						if (!(speed < 0.0))
 							continue;
+						if (std::abs(speed) < 25.0 * game.getFacilityCapturePointsPerVehiclePerTick())
+							continue;
 						double need_points = game.getMaxFacilityCapturePoints() + f.getCapturePoints();
 						int time = (int)(need_points / speed + 0.5);
 						double max_squared_distance = (0.65 * game.getTankSpeed() * 0.6 * (double)time) * (0.65 * game.getTankSpeed() * 0.6 * (double)time);
