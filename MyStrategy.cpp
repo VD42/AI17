@@ -865,6 +865,13 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	if (last_moving_move + 1 <= world.getTickIndex())
 		stopped = true;
 
+	static std::map<long long, std::pair<bool, double>> facilities_cur_state;
+	static std::map<long long, std::pair<bool, double>> facilities_prev_state;
+
+	facilities_prev_state = std::move(facilities_cur_state);
+	for (auto const& f : world.getFacilities())
+		facilities_cur_state[f.getId()] = { f.getOwnerPlayerId() == pid, f.getCapturePoints() };
+
 	// strategy
 
 	static int mode = 0;
@@ -1467,15 +1474,21 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 					for (auto const& f : world.getFacilities())
 					{
-						if (f.getOwnerPlayerId() != pid)
-							continue;
-						if ((double)f.getCapturePoints() > (double)game.getMaxFacilityCapturePoints() * 0.75)
+						if (!(f.getOwnerPlayerId() == pid || f.getOwnerPlayerId() == -1))
 							continue;
 						if (!(64.0 - 0.1 < f.getLeft() && f.getLeft() < game.getWorldWidth() - 64.0 - 64.0 + 0.1))
 							continue;
 						if (!(64.0 - 0.1 < f.getTop() && f.getTop() < game.getWorldHeight() - 64.0 - 64.0 + 0.1))
 							continue;
+						double speed = facilities_cur_state[f.getId()].second - facilities_prev_state[f.getId()].second;
+						if (!(speed < 0.0))
+							continue;
+						double need_points = game.getMaxFacilityCapturePoints() + f.getCapturePoints();
+						int time = (int)(need_points / speed + 0.5);
+						double max_squared_distance = (0.65 * game.getTankSpeed() * 0.6 * (double)time) * (0.65 * game.getTankSpeed() * 0.6 * (double)time);
 						double squared_distance = (current_position.first - f.getLeft() - 32.0) * (current_position.first - f.getLeft() - 32.0) + (current_position.second - f.getTop() - 32.0) * (current_position.second - f.getTop() - 32.0);
+						if (squared_distance > max_squared_distance)
+							continue;
 						if (squared_distance < minSquaredDistance)
 						{
 							f_found = true;
