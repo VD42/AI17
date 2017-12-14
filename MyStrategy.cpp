@@ -1467,85 +1467,32 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 				movePrediction = 0;
 				if (recruiting_fid == -1)
 				{
-					static long long go_to_facility = -1;
-
 					double minSquaredDistance = 1024.0 * 1024.0;
 					long long minFacilityId = -1;
 
-					if (go_to_facility != -1)
+					for (auto const& f : world.getFacilities())
 					{
-						for (auto const& f : world.getFacilities())
-						{
-							if (f.getId() != go_to_facility)
-								continue;
-							if (f.getOwnerPlayerId() == pid && f.getCapturePoints() > game.getMaxFacilityCapturePoints() - 0.0001)
-							{
-								go_to_facility = -1;
-							}
-							else
-							{
-								double squared_distance = (current_position.first - f.getLeft() - 32.0) * (current_position.first - f.getLeft() - 32.0) + (current_position.second - f.getTop() - 32.0) * (current_position.second - f.getTop() - 32.0);
-								minSquaredDistance = squared_distance / 4.0;
-								minFacilityId = go_to_facility;
-							}
-							break;
-						}
-					}
-
-					/*for (auto const& f : world.getFacilities())
-					{
-						if (!(f.getOwnerPlayerId() == pid || f.getOwnerPlayerId() == -1))
+						if (f.getOwnerPlayerId() == pid)
 							continue;
-						if (f.getType() != model::FacilityType::CONTROL_CENTER)
+						if (f.getOwnerPlayerId() != -1 && f.getType() == model::FacilityType::CONTROL_CENTER)
 							continue;
 						if (!(64.0 - 0.1 < f.getLeft() && f.getLeft() < game.getWorldWidth() - 64.0 - 64.0 + 0.1))
 							continue;
 						if (!(64.0 - 0.1 < f.getTop() && f.getTop() < game.getWorldHeight() - 64.0 - 64.0 + 0.1))
 							continue;
-						double speed = facilities_cur_state[f.getId()].second - facilities_prev_state[f.getId()].second;
-						if (!(speed < 0.0))
-							continue;
-						double need_points = game.getMaxFacilityCapturePoints() + f.getCapturePoints();
-						int time = (int)(need_points / std::abs(speed) + 0.5);
-						double max_squared_distance = (0.65 * game.getTankSpeed() * 0.6 * (double)time) * (0.65 * game.getTankSpeed() * 0.6 * (double)time);
 						double squared_distance = (current_position.first - f.getLeft() - 32.0) * (current_position.first - f.getLeft() - 32.0) + (current_position.second - f.getTop() - 32.0) * (current_position.second - f.getTop() - 32.0);
-						if (squared_distance > max_squared_distance)
-							continue;
 						if (squared_distance < minSquaredDistance)
 						{
 							minFacilityId = f.getId();
 							minSquaredDistance = squared_distance;
 						}
-					}*/
+					}
 
-					//if (minFacilityId == -1)
-					//{
-						for (auto const& f : world.getFacilities())
-						{
-							if (f.getOwnerPlayerId() == pid)
-								continue;
-							if (f.getOwnerPlayerId() != -1 && f.getType() == model::FacilityType::CONTROL_CENTER)
-								continue;
-							if (!(64.0 - 0.1 < f.getLeft() && f.getLeft() < game.getWorldWidth() - 64.0 - 64.0 + 0.1))
-								continue;
-							if (!(64.0 - 0.1 < f.getTop() && f.getTop() < game.getWorldHeight() - 64.0 - 64.0 + 0.1))
-								continue;
-							double squared_distance = (current_position.first - f.getLeft() - 32.0) * (current_position.first - f.getLeft() - 32.0) + (current_position.second - f.getTop() - 32.0) * (current_position.second - f.getTop() - 32.0);
-							if (squared_distance < minSquaredDistance)
-							{
-								minFacilityId = f.getId();
-								minSquaredDistance = squared_distance;
-							}
-						}
-					//}
-
-					go_to_facility = minFacilityId;
-
-					if (go_to_facility != -1)
+					if (minFacilityId != -1)
 					{
 						for (auto const& f : world.getFacilities())
 						{
-							if (f.getId() != go_to_facility)
+							if (f.getId() != minFacilityId)
 								continue;
 							
 							CMove move_move;
