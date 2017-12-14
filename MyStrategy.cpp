@@ -870,7 +870,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 	facilities_prev_state = std::move(facilities_cur_state);
 	for (auto const& f : world.getFacilities())
-		facilities_cur_state[f.getId()] = { f.getOwnerPlayerId() == pid, f.getCapturePoints() };
+		facilities_cur_state[f.getId()] = std::make_pair((f.getOwnerPlayerId() == pid), f.getCapturePoints());
 
 	// strategy
 
@@ -1506,7 +1506,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						if (!(speed < 0.0))
 							continue;
 						double need_points = game.getMaxFacilityCapturePoints() + f.getCapturePoints();
-						int time = (int)(need_points / speed + 0.5);
+						int time = (int)(need_points / std::abs(speed) + 0.5);
 						double max_squared_distance = (0.65 * game.getTankSpeed() * 0.6 * (double)time) * (0.65 * game.getTankSpeed() * 0.6 * (double)time);
 						double squared_distance = (current_position.first - f.getLeft() - 32.0) * (current_position.first - f.getLeft() - 32.0) + (current_position.second - f.getTop() - 32.0) * (current_position.second - f.getTop() - 32.0);
 						if (squared_distance > max_squared_distance)
