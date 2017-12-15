@@ -872,6 +872,9 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 	for (auto const& f : world.getFacilities())
 		facilities_cur_state[f.getId()] = std::make_pair((f.getOwnerPlayerId() == pid), f.getCapturePoints());
 
+	const static double MAX_SPEED = 0.3 * 0.6;
+	const static double MAX_ANGULAR_SPEED = MAX_SPEED / 66.0;
+
 	// strategy
 
 	static int mode = 0;
@@ -1079,7 +1082,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			rotate_move.setX(current_position.first);
 			rotate_move.setY(current_position.second);
 			rotate_move.setAngle(current_angle);
-			rotate_move.setMaxAngularSpeed(PI / 800.0);
+			rotate_move.setMaxAngularSpeed(MAX_ANGULAR_SPEED);
 			rotate_move.m_wait_completion = true;
 			moves.push_back(rotate_move);
 		}
@@ -1175,7 +1178,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			{
 				bool STRIIIIIIIIKE = false;
 
-				if (target_group.first && (target_group.second.first - current_position.first) * (target_group.second.first - current_position.first) + (target_group.second.second - current_position.second) * (target_group.second.second - current_position.second) < game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6 * game.getBaseTacticalNuclearStrikeCooldown() * game.getTankSpeed() * 0.6)
+				if (target_group.first && (target_group.second.first - current_position.first) * (target_group.second.first - current_position.first) + (target_group.second.second - current_position.second) * (target_group.second.second - current_position.second) < game.getBaseTacticalNuclearStrikeCooldown() * MAX_SPEED * game.getBaseTacticalNuclearStrikeCooldown() * MAX_SPEED)
 				{
 					for (auto const& v : vehicles)
 					{
@@ -1451,10 +1454,10 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							rotate_move.setX(current_position.first);
 							rotate_move.setY(current_position.second);
 							rotate_move.setAngle(delta_angle);
-							rotate_move.setMaxAngularSpeed(PI / 800.0);
+							rotate_move.setMaxAngularSpeed(MAX_ANGULAR_SPEED);
 							moves.push_back(rotate_move);
 
-							rotatePrediction = std::max(6, std::min(18, (int)(std::abs(delta_angle) / (PI / 800.0) + 0.5)));
+							rotatePrediction = std::max(6, std::min(18, (int)(std::abs(delta_angle) / MAX_ANGULAR_SPEED + 0.5)));
 						}
 					}
 				}
@@ -1518,11 +1521,11 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 							move_move.setAction(model::ActionType::MOVE);
 							move_move.setX(f.getLeft() + 32.0 - current_position.first);
 							move_move.setY(f.getTop() + 32.0 - current_position.second);
-							move_move.setMaxSpeed(game.getTankSpeed() * 0.6);
+							move_move.setMaxSpeed(MAX_SPEED);
 							moves.push_back(move_move);
 
 							double squared_distance = (current_position.first - f.getLeft() - 32.0) * (current_position.first - f.getLeft() - 32.0) + (current_position.second - f.getTop() - 32.0) * (current_position.second - f.getTop() - 32.0);
-							movePrediction = std::max(6, std::min(36, (int)(std::sqrt(squared_distance) / (game.getTankSpeed() * 0.6) + 0.5)));
+							movePrediction = std::max(6, std::min(36, (int)(std::sqrt(squared_distance) / MAX_SPEED + 0.5)));
 
 							break;
 						}
@@ -1552,7 +1555,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 
 	if (global_rotating)
 	{
-		if (std::abs(global_rotating_angle) < PI / 800.0)
+		if (std::abs(global_rotating_angle) < MAX_ANGULAR_SPEED)
 		{
 			current_angle += global_rotating_angle;
 			global_rotating = false;
@@ -1561,20 +1564,20 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		{
 			if (global_rotating_angle > 0)
 			{
-				global_rotating_angle -= PI / 800.0;
-				current_angle += PI / 800.0;
+				global_rotating_angle -= MAX_ANGULAR_SPEED;
+				current_angle += MAX_ANGULAR_SPEED;
 			}
 			else
 			{
-				global_rotating_angle += PI / 800.0;
-				current_angle -= PI / 800.0;
+				global_rotating_angle += MAX_ANGULAR_SPEED;
+				current_angle -= MAX_ANGULAR_SPEED;
 			}
 		}
 	}
 
 	if (global_moving)
 	{
-		if ((global_moving_position.first - current_position.first) * (global_moving_position.first - current_position.first) + (global_moving_position.second - current_position.second) * (global_moving_position.second - current_position.second) < game.getTankSpeed() * 0.6 * game.getTankSpeed() * 0.6)
+		if ((global_moving_position.first - current_position.first) * (global_moving_position.first - current_position.first) + (global_moving_position.second - current_position.second) * (global_moving_position.second - current_position.second) < MAX_SPEED * MAX_SPEED)
 		{
 			current_position = global_moving_position;
 			global_moving = false;
@@ -1584,19 +1587,19 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 			double distance = std::sqrt((global_moving_position.first - current_position.first) * (global_moving_position.first - current_position.first) + (global_moving_position.second - current_position.second) * (global_moving_position.second - current_position.second));
 			if (global_moving_position.first > current_position.first)
 			{
-				current_position.first += (std::abs(global_moving_position.first - current_position.first) / distance) * game.getTankSpeed() * 0.6;
+				current_position.first += (std::abs(global_moving_position.first - current_position.first) / distance) * MAX_SPEED;
 			}
 			else
 			{
-				current_position.first -= (std::abs(global_moving_position.first - current_position.first) / distance) * game.getTankSpeed() * 0.6;
+				current_position.first -= (std::abs(global_moving_position.first - current_position.first) / distance) * MAX_SPEED;
 			}
 			if (global_moving_position.second > current_position.second)
 			{
-				current_position.second += (std::abs(global_moving_position.second - current_position.second) / distance) * game.getTankSpeed() * 0.6;
+				current_position.second += (std::abs(global_moving_position.second - current_position.second) / distance) * MAX_SPEED;
 			}
 			else
 			{
-				current_position.second -= (std::abs(global_moving_position.second - current_position.second) / distance) * game.getTankSpeed() * 0.6;
+				current_position.second -= (std::abs(global_moving_position.second - current_position.second) / distance) * MAX_SPEED;
 			}
 		}
 	}
