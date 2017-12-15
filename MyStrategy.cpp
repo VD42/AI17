@@ -1488,6 +1488,25 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 						}
 					}
 
+					if (minFacilityId == -1)
+					{
+						for (auto const& f : world.getFacilities())
+						{
+							if (f.getOwnerPlayerId() == pid)
+								continue;
+							if (!(64.0 - 0.1 < f.getLeft() && f.getLeft() < game.getWorldWidth() - 64.0 - 64.0 + 0.1))
+								continue;
+							if (!(64.0 - 0.1 < f.getTop() && f.getTop() < game.getWorldHeight() - 64.0 - 64.0 + 0.1))
+								continue;
+							double squared_distance = (current_position.first - f.getLeft() - 32.0) * (current_position.first - f.getLeft() - 32.0) + (current_position.second - f.getTop() - 32.0) * (current_position.second - f.getTop() - 32.0);
+							if (squared_distance < minSquaredDistance)
+							{
+								minFacilityId = f.getId();
+								minSquaredDistance = squared_distance;
+							}
+						}
+					}
+
 					if (minFacilityId != -1)
 					{
 						for (auto const& f : world.getFacilities())
