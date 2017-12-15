@@ -873,7 +873,7 @@ void MyStrategy::move(model::Player const& me, model::World const& world, model:
 		facilities_cur_state[f.getId()] = std::make_pair((f.getOwnerPlayerId() == pid), f.getCapturePoints());
 
 	const static double MAX_SPEED = 0.3 * 0.6;
-	const static double MAX_ANGULAR_SPEED = MAX_SPEED / 66.0;
+	const static double MAX_ANGULAR_SPEED = MAX_SPEED / 64.0; // 15x5
 
 	// strategy
 
